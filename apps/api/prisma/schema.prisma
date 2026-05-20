@@ -1,0 +1,667 @@
+// GPMS — Gate Pass Management System
+// Multi-tenant Prisma schema. Every tenant-scoped table carries tenant_id; tenant
+// isolation is enforced by application-layer Prisma middleware (see prisma.service.ts).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------- Enums ---------------------------------------
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  PM
+  HR
+  SECRETARY
+  VIEWER
+  SUBCONTRACTOR
+}
+
+enum ThemePreference {
+  DARK
+  LIGHT
+}
+
+enum AirportCode {
+  AUH
+  AAN
+  SIR
+  AZI
+  ZDY
+  ALL
+}
+
+enum ZoneCode {
+  AP
+  AR
+  CO
+  TT
+  AT
+  BS
+  TW
+  PX
+  CT
+  GW
+  EYE
+  ALL_ZONES
+  BHS
+  CBP
+  BHS_CBP
+  PA
+  FF
+  TL
+}
+
+enum GatePassStatus {
+  VALID
+  EXPIRY_30
+  EXPIRY_15
+  EXPIRY_7
+  EXPIRED
+  RENEWAL_SUBMITTED
+  RENEWAL_APPROVED
+  RENEWED
+  CANCELLATION_REQUESTED
+  CANCELLED
+  SUSPENDED
+}
+
+enum CustodyStatus {
+  WITH_COMPANY
+  WITH_PERSON
+  RETURNED_TO_COMPANY
+  SURRENDERED_TO_AUTHORITY
+}
+
+enum DocumentType {
+  PASS_SCAN_FRONT
+  PASS_SCAN_BACK
+  RECEIPT
+  STAFF_PHOTO
+  HANDOVER_UNSIGNED
+  HANDOVER_SIGNED
+  CANCELLATION_CONFIRMATION
+  SUPPORTING
+}
+
+enum VehicleType {
+  PRIVATE
+  COMPANY
+}
+
+enum InsuranceType {
+  COMPREHENSIVE
+  THIRD_PARTY
+}
+
+enum MachineryStatus {
+  ACTIVE
+  IDLE
+  MAINTENANCE
+  OUT_OF_SERVICE
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  TERMINATED
+}
+
+enum CompanyDocType {
+  TRADE_LICENSE
+  ESTABLISHMENT_CARD
+  CLASSIFICATION
+  CIVIL_DEFENSE
+  POWER_OF_ATTORNEY
+  OFFICE_TENANCY
+}
+
+enum DocStatus {
+  VALID
+  EXPIRING_SOON
+  EXPIRED
+  UNDER_RENEWAL
+}
+
+enum NotificationType {
+  EXPIRY_30
+  EXPIRY_15
+  EXPIRY_7
+  EXPIRY_0
+  OVERDUE_CANCELLATION
+  OVERDUE_HANDOVER
+  STAFF_OFFBOARDING
+  CUSTODY_CHANGE
+  RENEWAL_APPROVED
+  RENEWAL_REJECTED
+  CANCELLATION_CONFIRMED
+  PERMISSION_CHANGE
+  DATA_DELETION_WARNING
+  INVITATION
+  DOCUMENT_EXPIRY_ALERT
+}
+
+// ----------------------------- Models --------------------------------------
+
+model Tenant {
+  id          String   @id @default(uuid()) @db.Char(36)
+  name        String
+  logoUrl     String?  @map("logo_url")
+  isActive    Boolean  @default(true) @map("is_active")
+  // settings.retention_period_days (number | "permanent"), pass_validity_months (number, default 6)
+  settings    Json     @default("{\"retention_period_days\": 30, \"pass_validity_months\": 6}")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt       @map("updated_at")
+
+  users               User[]
+  companies           Company[]
+  subcontractorOrgs   SubcontractorOrg[]
+  staff               Staff[]
+  gatePasses          GatePass[]
+  documents           Document[]
+  custodyHistory      CustodyHistory[]
+  notifications       Notification[]
+  notificationTemplates NotificationTemplate[]
+  rolePermissions     RolePermission[]
+  auditLogs           AuditLog[]
+  vehicles            Vehicle[]
+  heavyMachinery      HeavyMachinery[]
+  employees           Employee[]
+  companyDocuments        CompanyDocument[]
+  expiryNotificationLogs  ExpiryNotificationLog[]
+  alarmThresholdConfigs   AlarmThresholdConfig[]
+
+  @@map("tenants")
+}
+
+model User {
+  id                    String           @id @default(uuid()) @db.Char(36)
+  tenantId              String           @map("tenant_id") @db.Char(36)
+  email                 String
+  passwordHash          String?          @map("password_hash")
+  name                  String
+  phone                 String?
+  role                  UserRole
+  subcontractorOrgId    String?          @map("subcontractor_org_id") @db.Char(36)
+  themePreference       ThemePreference  @default(DARK) @map("theme_preference")
+  isActive              Boolean          @default(true) @map("is_active")
+  canAccessAllCompanies Boolean          @default(false) @map("can_access_all_companies")
+  invitationToken       String?          @unique @map("invitation_token")
+  invitationExpiresAt   DateTime?        @map("invitation_expires_at")
+  lastLoginAt           DateTime?        @map("last_login_at")
+  createdAt             DateTime         @default(now()) @map("created_at")
+  updatedAt             DateTime         @updatedAt       @map("updated_at")
+
+  tenant              Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subcontractorOrg    SubcontractorOrg? @relation(fields: [subcontractorOrgId], references: [id])
+  companyAccess       UserCompanyAccess[]
+  uploadedDocuments   Document[]       @relation("UploadedBy")
+  custodyChanges      CustodyHistory[] @relation("ChangedBy")
+  notifications       Notification[]
+  auditLogs           AuditLog[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("users")
+}
+
+model SubcontractorOrg {
+  id            String   @id @default(uuid()) @db.Char(36)
+  tenantId      String   @map("tenant_id") @db.Char(36)
+  companyId     String?  @map("company_id")
+  name          String
+  contactPerson String?  @map("contact_person")
+  contactEmail  String?  @map("contact_email")
+  contactPhone  String?  @map("contact_phone")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company       Company? @relation(fields: [companyId], references: [id])
+  users         User[]
+  staff         Staff[]
+
+  @@index([tenantId])
+  @@map("subcontractor_orgs")
+}
+
+model Staff {
+  id                 String    @id @default(uuid()) @db.Char(36)
+  tenantId           String    @map("tenant_id") @db.Char(36)
+  companyId          String?   @map("company_id")
+  name               String
+  nationality        String?
+  designation        String?
+  companyName        String?   @map("company_name")
+  subcontractorOrgId String?   @map("subcontractor_org_id") @db.Char(36)
+  photoUrl           String?   @map("photo_url")
+  isActive           Boolean   @default(true) @map("is_active")
+  lastWorkingDay     DateTime? @map("last_working_day") @db.Date
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt       @map("updated_at")
+
+  tenant             Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company            Company?  @relation(fields: [companyId], references: [id])
+  subcontractorOrg   SubcontractorOrg? @relation(fields: [subcontractorOrgId], references: [id])
+  gatePasses         GatePass[]
+
+  @@index([tenantId])
+  @@index([tenantId, name])
+  @@map("staff")
+}
+
+model GatePass {
+  id                        String         @id @default(uuid()) @db.Char(36)
+  tenantId                  String         @map("tenant_id") @db.Char(36)
+  companyId                 String?        @map("company_id")
+  passNumber                String         @map("pass_number") // 6-digit string, unique per tenant
+  staffId                   String         @map("staff_id") @db.Char(36)
+  organization              String?
+  department                String?
+  airport                   AirportCode
+  issueDate                 DateTime       @map("issue_date") @db.Date
+  expiryDate                DateTime       @map("expiry_date") @db.Date
+  status                    GatePassStatus @default(VALID)
+  custodyStatus             CustodyStatus  @default(WITH_COMPANY) @map("custody_status")
+  passScanFrontUrl          String?        @map("pass_scan_front_url")
+  passScanBackUrl           String?        @map("pass_scan_back_url")
+  receiptScanUrl            String?        @map("receipt_scan_url")
+  handoverUnsignedUrl       String?        @map("handover_unsigned_url")
+  handoverSignedUrl         String?        @map("handover_signed_url")
+  authorityHandoverDate     DateTime?      @map("authority_handover_date") @db.Date
+  authorityOfficerName      String?        @map("authority_officer_name")
+  authorityReferenceNumber  String?        @map("authority_reference_number")
+  // Lifecycle tracking
+  renewalSubmittedAt        DateTime?      @map("renewal_submitted_at")
+  renewalApprovedAt         DateTime?      @map("renewal_approved_at")
+  renewalRejectedAt         DateTime?      @map("renewal_rejected_at")
+  renewalRejectionReason    String?        @map("renewal_rejection_reason")
+  renewedFromPassId         String?        @map("renewed_from_pass_id") @db.Char(36)
+  cancellationRequestedAt   DateTime?      @map("cancellation_requested_at")
+  cancellationReason        String?        @map("cancellation_reason")
+  cancellationCompletedAt   DateTime?      @map("cancellation_completed_at")
+  dataDeletionScheduledAt   DateTime?      @map("data_deletion_scheduled_at")
+  createdAt                 DateTime       @default(now()) @map("created_at")
+  updatedAt                 DateTime       @updatedAt       @map("updated_at")
+
+  tenant       Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company      Company?        @relation(fields: [companyId], references: [id])
+  staff        Staff           @relation(fields: [staffId], references: [id])
+  zones        GatePassZone[]
+  documents    Document[]
+  custodyHistory CustodyHistory[]
+
+  @@unique([tenantId, passNumber])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, expiryDate])
+  @@index([tenantId, custodyStatus])
+  @@index([tenantId, cancellationRequestedAt])
+  @@map("gate_passes")
+}
+
+model GatePassZone {
+  id          String   @id @default(uuid()) @db.Char(36)
+  gatePassId  String   @map("gate_pass_id") @db.Char(36)
+  zoneCode    ZoneCode @map("zone_code")
+
+  gatePass    GatePass @relation(fields: [gatePassId], references: [id], onDelete: Cascade)
+
+  @@unique([gatePassId, zoneCode])
+  @@index([gatePassId])
+  @@map("gate_pass_zones")
+}
+
+model CustodyHistory {
+  id                       String         @id @default(uuid()) @db.Char(36)
+  gatePassId               String         @map("gate_pass_id") @db.Char(36)
+  tenantId                 String         @map("tenant_id") @db.Char(36)
+  fromStatus               CustodyStatus? @map("from_status")
+  toStatus                 CustodyStatus  @map("to_status")
+  changedById              String         @map("changed_by") @db.Char(36)
+  authorityHandoverDate    DateTime?      @map("authority_handover_date") @db.Date
+  authorityOfficerName     String?        @map("authority_officer_name")
+  authorityReferenceNumber String?        @map("authority_reference_number")
+  notes                    String?
+  createdAt                DateTime       @default(now()) @map("created_at")
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  gatePass    GatePass @relation(fields: [gatePassId], references: [id], onDelete: Cascade)
+  changedBy   User     @relation("ChangedBy", fields: [changedById], references: [id])
+
+  @@index([tenantId])
+  @@index([gatePassId])
+  @@map("custody_history")
+}
+
+model Document {
+  id              String       @id @default(uuid()) @db.Char(36)
+  tenantId        String       @map("tenant_id") @db.Char(36)
+  gatePassId      String?      @map("gate_pass_id") @db.Char(36)
+  type            DocumentType
+  fileUrl         String       @map("file_url")
+  fileName        String       @map("file_name")
+  fileSizeBytes   Int          @map("file_size_bytes")
+  mimeType        String       @map("mime_type")
+  uploadedById    String       @map("uploaded_by") @db.Char(36)
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  gatePass   GatePass? @relation(fields: [gatePassId], references: [id], onDelete: Cascade)
+  uploadedBy User     @relation("UploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([tenantId])
+  @@index([gatePassId])
+  @@map("documents")
+}
+
+model Notification {
+  id          String           @id @default(uuid()) @db.Char(36)
+  tenantId    String           @map("tenant_id") @db.Char(36)
+  userId      String           @map("user_id") @db.Char(36)
+  type        NotificationType
+  title       String
+  message     String
+  entityType  String?          @map("entity_type")
+  entityId    String?          @map("entity_id") @db.Char(36)
+  isRead      Boolean          @default(false) @map("is_read")
+  readAt      DateTime?        @map("read_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, userId])
+  @@index([tenantId, isRead])
+  @@map("notifications")
+}
+
+model NotificationTemplate {
+  id              String           @id @default(uuid()) @db.Char(36)
+  tenantId        String           @map("tenant_id") @db.Char(36)
+  type            NotificationType
+  subjectTemplate String           @map("subject_template")
+  bodyTemplate    String           @map("body_template")
+  isCustomized    Boolean          @default(false) @map("is_customized")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt       @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, type])
+  @@map("notification_templates")
+}
+
+model RolePermission {
+  id          String   @id @default(uuid()) @db.Char(36)
+  tenantId    String   @map("tenant_id") @db.Char(36)
+  role        UserRole
+  module      String
+  feature     String
+  isEnabled   Boolean  @default(false) @map("is_enabled")
+  updatedById String?  @map("updated_by") @db.Char(36)
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, role, module, feature])
+  @@index([tenantId, role])
+  @@map("role_permissions")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Char(36)
+  tenantId   String   @map("tenant_id") @db.Char(36)
+  userId     String?  @map("user_id") @db.Char(36)
+  action     String
+  entityType String?  @map("entity_type")
+  entityId   String?  @map("entity_id")
+  details    Json?
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, entityType, entityId])
+  @@map("audit_logs")
+}
+
+model Company {
+  id             String   @id @default(cuid())
+  tenantId       String   @map("tenant_id") @db.Char(36)
+  name           String
+  code           String
+  tradeLicenseNo String?  @map("trade_license_no")
+  address        String?
+  phone          String?
+  email          String?
+  logoUrl        String?  @map("logo_url")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt       @map("updated_at")
+
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userAccess        UserCompanyAccess[]
+  gatePasses        GatePass[]
+  staff             Staff[]
+  subcontractorOrgs SubcontractorOrg[]
+  vehicles          Vehicle[]
+  heavyMachinery    HeavyMachinery[]
+  employees         Employee[]
+  companyDocuments  CompanyDocument[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("companies")
+}
+
+model UserCompanyAccess {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id") @db.Char(36)
+  companyId   String   @map("company_id")
+  accessLevel String   @default("MEMBER") @map("access_level")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+  @@index([userId])
+  @@index([companyId])
+  @@map("user_company_access")
+}
+
+model Vehicle {
+  id                           String        @id @default(cuid())
+  tenantId                     String        @map("tenant_id") @db.Char(36)
+  companyId                    String?       @map("company_id")
+  vehicleType                  VehicleType   @map("vehicle_type")
+  ownerName                    String        @map("owner_name")
+  driverName                   String?       @map("driver_name")
+  carMake                      String        @map("car_make")
+  carModel                     String?       @map("car_model")
+  plateEmirate                 String        @map("plate_emirate")
+  plateCategory                String?       @map("plate_category")
+  plateNumber                  String        @map("plate_number")
+  carLicenseNo                 String        @map("car_license_no")
+  carLicenseExpiryDate         DateTime      @map("car_license_expiry_date") @db.Date
+  carLicenseAttachmentId       String?       @map("car_license_attachment_id")
+  insuranceType                InsuranceType @map("insurance_type")
+  insurancePolicyNo            String?       @map("insurance_policy_no")
+  insuranceExpiryDate          DateTime      @map("insurance_expiry_date") @db.Date
+  insuranceAttachmentId        String?       @map("insurance_attachment_id")
+  hasResidentialMawaqif        Boolean       @default(false) @map("has_residential_mawaqif")
+  residentialMawaqifExpiryDate DateTime?     @map("residential_mawaqif_expiry_date") @db.Date
+  hasNormalMawaqif             Boolean       @default(false) @map("has_normal_mawaqif")
+  normalMawaqifExpiryDate      DateTime?     @map("normal_mawaqif_expiry_date") @db.Date
+  formAttachmentId             String?       @map("form_attachment_id")
+  isActive                     Boolean       @default(true) @map("is_active")
+  remarks                      String?
+  createdAt                    DateTime      @default(now()) @map("created_at")
+  updatedAt                    DateTime      @updatedAt @map("updated_at")
+  createdBy                    String?       @map("created_by")
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company Company? @relation(fields: [companyId], references: [id])
+
+  @@index([tenantId])
+  @@index([companyId])
+  @@index([tenantId, plateNumber])
+  @@map("vehicles")
+}
+
+model HeavyMachinery {
+  id                            String           @id @default(cuid())
+  tenantId                      String           @map("tenant_id") @db.Char(36)
+  companyId                     String?          @map("company_id")
+  machineType                   String           @map("machine_type")
+  make                          String
+  model                         String?
+  manufactureYear               Int?             @map("manufacture_year")
+  serialNumber                  String           @map("serial_number")
+  plateNumber                   String?          @map("plate_number")
+  assignedOperator              String?          @map("assigned_operator")
+  currentLocation               String?          @map("current_location")
+  projectSite                   String?          @map("project_site")
+  status                        MachineryStatus  @default(ACTIVE)
+  operatorLicenseNo             String?          @map("operator_license_no")
+  operatorLicenseExpiryDate     DateTime?        @map("operator_license_expiry_date") @db.Date
+  operatorLicenseAttachmentId   String?          @map("operator_license_attachment_id")
+  inspectionCertificateNo       String?          @map("inspection_certificate_no")
+  inspectionExpiryDate          DateTime?        @map("inspection_expiry_date") @db.Date
+  inspectionAttachmentId        String?          @map("inspection_attachment_id")
+  rtaRegistrationNo             String?          @map("rta_registration_no")
+  rtaRegistrationExpiryDate     DateTime?        @map("rta_registration_expiry_date") @db.Date
+  rtaRegistrationAttachmentId   String?          @map("rta_registration_attachment_id")
+  liftingTestCertificateNo      String?          @map("lifting_test_certificate_no")
+  liftingTestExpiryDate         DateTime?        @map("lifting_test_expiry_date") @db.Date
+  liftingTestAttachmentId       String?          @map("lifting_test_attachment_id")
+  insuranceType                 InsuranceType?   @map("insurance_type")
+  insuranceExpiryDate           DateTime?        @map("insurance_expiry_date") @db.Date
+  insuranceAttachmentId         String?          @map("insurance_attachment_id")
+  civilDefenseExpiryDate        DateTime?        @map("civil_defense_expiry_date") @db.Date
+  civilDefenseAttachmentId      String?          @map("civil_defense_attachment_id")
+  photoAttachmentId             String?          @map("photo_attachment_id")
+  isActive                      Boolean          @default(true) @map("is_active")
+  remarks                       String?
+  createdAt                     DateTime         @default(now()) @map("created_at")
+  updatedAt                     DateTime         @updatedAt @map("updated_at")
+  createdBy                     String?          @map("created_by")
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company Company? @relation(fields: [companyId], references: [id])
+
+  @@index([tenantId])
+  @@index([companyId])
+  @@map("heavy_machinery")
+}
+
+model Employee {
+  id                       String         @id @default(cuid())
+  tenantId                 String         @map("tenant_id") @db.Char(36)
+  companyId                String         @map("company_id")
+  name                     String
+  designation              String
+  emiratesIdNo             String         @map("emirates_id_no")
+  emiratesIdExpiryDate     DateTime?      @map("emirates_id_expiry_date") @db.Date
+  emiratesIdAttachmentId   String?        @map("emirates_id_attachment_id")
+  visaNo                   String?        @map("visa_no")
+  visaExpiryDate           DateTime       @map("visa_expiry_date") @db.Date
+  visaAttachmentId         String?        @map("visa_attachment_id")
+  laborCardNo              String?        @map("labor_card_no")
+  laborCardExpiryDate      DateTime?      @map("labor_card_expiry_date") @db.Date
+  laborCardAttachmentId    String?        @map("labor_card_attachment_id")
+  passportNo               String?        @map("passport_no")
+  passportExpiryDate       DateTime?      @map("passport_expiry_date") @db.Date
+  passportAttachmentId     String?        @map("passport_attachment_id")
+  phone                    String?
+  email                    String?
+  joinDate                 DateTime?      @map("join_date") @db.Date
+  status                   EmployeeStatus @default(ACTIVE)
+  isActive                 Boolean        @default(true) @map("is_active")
+  remarks                  String?
+  createdAt                DateTime       @default(now()) @map("created_at")
+  updatedAt                DateTime       @updatedAt @map("updated_at")
+  createdBy                String?        @map("created_by")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([tenantId])
+  @@index([companyId])
+  @@index([tenantId, emiratesIdNo])
+  @@map("employees")
+}
+
+model CompanyDocument {
+  id            String         @id @default(cuid())
+  tenantId      String         @map("tenant_id") @db.Char(36)
+  companyId     String         @map("company_id")
+  docType       CompanyDocType @map("doc_type")
+  docName       String         @map("doc_name")
+  docNumber     String?        @map("doc_number")
+  issueDate     DateTime?      @map("issue_date") @db.Date
+  expiryDate    DateTime       @map("expiry_date") @db.Date
+  status        DocStatus      @default(VALID)
+  attachmentId  String?        @map("attachment_id")
+  metadata      Json?
+  isActive      Boolean        @default(true) @map("is_active")
+  remarks       String?
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  createdBy     String?        @map("created_by")
+  previousDocId String?        @map("previous_doc_id")
+
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company     Company          @relation(fields: [companyId], references: [id])
+  previousDoc CompanyDocument? @relation("DocRenewalChain", fields: [previousDocId], references: [id])
+  renewals    CompanyDocument[] @relation("DocRenewalChain")
+
+  @@index([tenantId])
+  @@index([companyId])
+  @@index([tenantId, docType])
+  @@index([tenantId, status])
+  @@index([tenantId, expiryDate])
+  @@map("company_documents")
+}
+
+model ExpiryNotificationLog {
+  id          String   @id @default(cuid())
+  tenantId    String   @map("tenant_id") @db.Char(36)
+  source      String
+  sourceId    String   @map("source_id")
+  docKind     String   @map("doc_kind")
+  band        String
+  notifiedOn  DateTime @default(now()) @map("notified_on")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, source, sourceId, docKind, band])
+  @@map("expiry_notification_logs")
+}
+
+model AlarmThresholdConfig {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id") @db.Char(36)
+  docKind   String   @map("doc_kind")
+  band1Days Int      @default(30) @map("band1_days")
+  band2Days Int      @default(14) @map("band2_days")
+  band3Days Int      @default(7)  @map("band3_days")
+  isActive  Boolean  @default(true) @map("is_active")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, docKind])
+  @@index([tenantId])
+  @@map("alarm_threshold_configs")
+}

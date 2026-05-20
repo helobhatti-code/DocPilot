@@ -1,0 +1,17 @@
+**/node_modules
+**/dist
+**/.next
+**/.cache
+**/.git
+**/.env
+**/.env.*
+!**/.env.example
+**/coverage
+**/uploads
+**/*.log
+**/.DS_Store
+**/.vscode
+**/.idea
+**/Dockerfile*
+**/docker-compose*
+*.docx

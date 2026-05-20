@@ -1,0 +1,183 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─────────────────────────────────────────────────────────────
+   LIGHT MODE  — Brand catalog: trust, operational control, clarity
+   ───────────────────────────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --bg-primary:   #EEF4FD;          /* Brand Light */
+  --bg-card:      #FFFFFF;
+  --bg-input:     #FFFFFF;
+  --sidebar-bg:        #FFFFFF;       /* Light sidebar */
+  --sidebar-text:      #0B2545;       /* Brand Navy */
+  --sidebar-muted:     #334E72;       /* Brand Slate */
+  --sidebar-faint:     #8BAFD4;
+  --sidebar-hover:     rgba(11,37,69,0.06);
+  --sidebar-border:    #E2E8F0;
+
+  /* Borders */
+  --border:       #C8D9EE;
+
+  /* Text */
+  --text-primary:   #0B2545;        /* Brand Navy */
+  --text-secondary: #334E72;        /* Brand Slate */
+
+  /* Accent */
+  --accent-primary:       #F47316;  /* Brand Orange  — CTAs */
+  --accent-primary-hover: #D96810;  /* Brand Orange Dark */
+  --accent-primary-light: #FEF0E6;  /* Brand Orange Light */
+  --accent-blue:          #2D7DD2;  /* Brand Mid — links / interactive */
+  --accent-blue-dark:     #1B5299;  /* Brand Blue */
+
+  /* Shadows */
+  --shadow:
+    0 1px 3px 0 rgba(11,37,69,0.08),
+    0 4px 16px 0 rgba(11,37,69,0.06);
+  --shadow-hover:
+    0 4px 12px 0 rgba(11,37,69,0.12),
+    0 16px 40px 0 rgba(11,37,69,0.10);
+
+  /* Glassmorphism tokens */
+  --glass-hero:   rgba(255,255,255,0.07);
+  --glass-panel:  rgba(255,255,255,0.10);
+  --glass-card:   rgba(255,255,255,0.88);
+  --glass-dark:   rgba(11,37,69,0.65);
+  --glass-nav:    rgba(255,255,255,0.93);
+  --glass-blur-sm: 12px;
+  --glass-blur:    16px;
+  --glass-blur-lg: 20px;
+  --glass-blur-xl: 24px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DARK MODE  — Navy-first, orange CTAs, blue accents
+   ───────────────────────────────────────────────────────────── */
+html.dark {
+  --bg-primary:   #0B2545;          /* Brand Navy */
+  --bg-card:      #0F2D56;          /* Navy + subtle lift */
+  --bg-input:     #142F5E;
+  --sidebar-bg:        #0B2545;       /* Same as bg-primary */
+  --sidebar-text:      #FFFFFF;
+  --sidebar-muted:     rgba(255,255,255,0.70);
+  --sidebar-faint:     rgba(255,255,255,0.30);
+  --sidebar-hover:     rgba(255,255,255,0.07);
+  --sidebar-border:    rgba(255,255,255,0.08);
+
+  --border:       #1B5299;          /* Brand Blue */
+
+  --text-primary:   #EEF4FD;        /* Brand Light */
+  --text-secondary: #8BAFD4;        /* Muted light-blue */
+
+  --accent-primary:       #F47316;
+  --accent-primary-hover: #D96810;
+  --accent-primary-light: #3A1F0A;  /* Dark bg for orange labels */
+  --accent-blue:          #2D7DD2;
+  --accent-blue-dark:     #1B5299;
+
+  --shadow:
+    0 1px 3px 0 rgba(0,0,0,0.40),
+    0 4px 16px 0 rgba(0,0,0,0.30);
+  --shadow-hover:
+    0 4px 12px 0 rgba(0,0,0,0.50),
+    0 16px 40px 0 rgba(0,0,0,0.40);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   BASE
+   ───────────────────────────────────────────────────────────── */
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   GLASSMORPHISM UTILITIES
+   ───────────────────────────────────────────────────────────── */
+.glass-hero {
+  background: var(--glass-hero);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.glass-panel {
+  background: var(--glass-panel);
+  backdrop-filter: blur(var(--glass-blur-lg));
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg));
+  box-shadow: var(--shadow);
+}
+
+.glass-card {
+  background: var(--glass-card);
+  backdrop-filter: blur(var(--glass-blur-sm));
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+}
+
+.glass-dark {
+  background: var(--glass-dark);
+  backdrop-filter: blur(var(--glass-blur-lg));
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg));
+}
+
+.glass-nav {
+  background: var(--glass-nav);
+  backdrop-filter: blur(var(--glass-blur-xl));
+  -webkit-backdrop-filter: blur(var(--glass-blur-xl));
+}
+
+/* Section label pill */
+.label-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-primary);
+  background: var(--accent-primary-light);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PRINT
+   ───────────────────────────────────────────────────────────── */
+@media print {
+  html.dark { color-scheme: light; }
+  html, html.dark {
+    --bg-primary:   #FFFFFF;
+    --bg-card:      #FFFFFF;
+    --bg-input:     #FFFFFF;
+    --border:       #E2E8F0;
+    --text-primary:   #0B2545;
+    --text-secondary: #334E72;
+    --sidebar-bg:   #FFFFFF;
+  }
+  .no-print { display: none !important; }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SCROLLBAR
+   ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--accent-blue-dark); }
