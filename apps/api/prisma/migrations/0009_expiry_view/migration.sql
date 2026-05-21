@@ -76,7 +76,7 @@ CREATE POLICY company_documents_company_isolation ON company_documents
 
 -- ─── 3. Add DOCUMENT_EXPIRY_ALERT to notification_type enum ──────────────────
 
-ALTER TYPE notification_type ADD VALUE 'DOCUMENT_EXPIRY_ALERT';
+ALTER TYPE "NotificationType" ADD VALUE 'DOCUMENT_EXPIRY_ALERT';
 
 -- ─── 4. expiry_notification_logs table ────────────────────────────────────────
 
