@@ -91,7 +91,7 @@ export class HeavyMachineryController {
       type: 'object',
       properties: {
         file:           { type: 'string', format: 'binary' },
-        attachmentKind: { type: 'string', enum: ATTACHMENT_KINDS },
+        attachmentKind: { type: 'string', enum: [...ATTACHMENT_KINDS] },
       },
       required: ['file', 'attachmentKind'],
     },
