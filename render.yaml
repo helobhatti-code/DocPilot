@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: docpilot-api
+    runtime: node
+    plan: free
+    branch: main
+    buildCommand: npm install --include=dev && npm run prisma:generate && npm run build --workspace=apps/api
+    startCommand: cd apps/api && npx prisma migrate deploy && node dist/main
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: PUBLIC_BASE_URL
+        sync: false
