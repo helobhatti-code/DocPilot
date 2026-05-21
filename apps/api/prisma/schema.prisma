@@ -113,6 +113,11 @@ enum EmployeeStatus {
   TERMINATED
 }
 
+enum PersonType {
+  DIRECT_EMPLOYEE
+  SUBCONTRACTOR
+}
+
 enum CompanyDocType {
   TRADE_LICENSE
   ESTABLISHMENT_CARD
@@ -234,19 +239,33 @@ model SubcontractorOrg {
 }
 
 model Staff {
-  id                 String    @id @default(uuid()) @db.Char(36)
-  tenantId           String    @map("tenant_id") @db.Char(36)
-  companyId          String?   @map("company_id")
-  name               String
-  nationality        String?
-  designation        String?
-  companyName        String?   @map("company_name")
-  subcontractorOrgId String?   @map("subcontractor_org_id") @db.Char(36)
-  photoUrl           String?   @map("photo_url")
-  isActive           Boolean   @default(true) @map("is_active")
-  lastWorkingDay     DateTime? @map("last_working_day") @db.Date
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt       @map("updated_at")
+  id                       String     @id @default(uuid()) @db.Char(36)
+  tenantId                 String     @map("tenant_id") @db.Char(36)
+  companyId                String?    @map("company_id")
+  name                     String
+  nationality              String?
+  designation              String?
+  companyName              String?    @map("company_name")
+  subcontractorOrgId       String?    @map("subcontractor_org_id") @db.Char(36)
+  photoUrl                 String?    @map("photo_url")
+  isActive                 Boolean    @default(true) @map("is_active")
+  lastWorkingDay           DateTime?  @map("last_working_day") @db.Date
+  personType               PersonType @default(SUBCONTRACTOR) @map("person_type")
+  // Direct-employee document fields (null for SUBCONTRACTOR rows)
+  emiratesIdNo             String?    @map("emirates_id_no")
+  emiratesIdExpiryDate     DateTime?  @map("emirates_id_expiry_date") @db.Date
+  emiratesIdAttachmentId   String?    @map("emirates_id_attachment_id")
+  visaNo                   String?    @map("visa_no")
+  visaExpiryDate           DateTime?  @map("visa_expiry_date") @db.Date
+  visaAttachmentId         String?    @map("visa_attachment_id")
+  laborCardNo              String?    @map("labor_card_no")
+  laborCardExpiryDate      DateTime?  @map("labor_card_expiry_date") @db.Date
+  laborCardAttachmentId    String?    @map("labor_card_attachment_id")
+  passportNo               String?    @map("passport_no")
+  passportExpiryDate       DateTime?  @map("passport_expiry_date") @db.Date
+  passportAttachmentId     String?    @map("passport_attachment_id")
+  createdAt                DateTime   @default(now()) @map("created_at")
+  updatedAt                DateTime   @updatedAt       @map("updated_at")
 
   tenant             Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   company            Company?  @relation(fields: [companyId], references: [id])
@@ -255,6 +274,7 @@ model Staff {
 
   @@index([tenantId])
   @@index([tenantId, name])
+  @@index([tenantId, personType])
   @@map("staff")
 }
 

@@ -33,6 +33,8 @@ export interface AuthUser {
   subcontractorOrgId?: string | null;
 }
 
+export type PersonType = 'DIRECT_EMPLOYEE' | 'SUBCONTRACTOR';
+
 export interface Staff {
   id: string;
   name: string;
@@ -43,6 +45,25 @@ export interface Staff {
   isActive: boolean;
   lastWorkingDay?: string | null;
   subcontractorOrgId?: string | null;
+  personType: PersonType;
+  emiratesIdNo?: string | null;
+  emiratesIdExpiryDate?: string | null;
+  emiratesIdAttachmentId?: string | null;
+  visaNo?: string | null;
+  visaExpiryDate?: string | null;
+  visaAttachmentId?: string | null;
+  laborCardNo?: string | null;
+  laborCardExpiryDate?: string | null;
+  laborCardAttachmentId?: string | null;
+  passportNo?: string | null;
+  passportExpiryDate?: string | null;
+  passportAttachmentId?: string | null;
+  // computed for DIRECT_EMPLOYEE rows (null for SUBCONTRACTOR)
+  visaExpiryBand?: ExpiryBand | null;
+  emiratesIdExpiryBand?: ExpiryBand | null;
+  laborCardExpiryBand?: ExpiryBand | null;
+  passportExpiryBand?: ExpiryBand | null;
+  worstExpiryBand?: ExpiryBand | null;
 }
 
 export interface SubcontractorOrg {
