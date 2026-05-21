@@ -3,18 +3,24 @@
 
 -- ─── 1. Enums for company_documents ──────────────────────────────────────────
 
-CREATE TYPE company_doc_type AS ENUM (
-  'TRADE_LICENSE', 'ESTABLISHMENT_CARD', 'CLASSIFICATION',
-  'CIVIL_DEFENSE', 'POWER_OF_ATTORNEY', 'OFFICE_TENANCY'
-);
+DO $$ BEGIN
+  CREATE TYPE company_doc_type AS ENUM (
+    'TRADE_LICENSE', 'ESTABLISHMENT_CARD', 'CLASSIFICATION',
+    'CIVIL_DEFENSE', 'POWER_OF_ATTORNEY', 'OFFICE_TENANCY'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TYPE doc_status AS ENUM (
-  'VALID', 'EXPIRING_SOON', 'EXPIRED', 'UNDER_RENEWAL'
-);
+DO $$ BEGIN
+  CREATE TYPE doc_status AS ENUM (
+    'VALID', 'EXPIRING_SOON', 'EXPIRED', 'UNDER_RENEWAL'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ─── 2. company_documents table ───────────────────────────────────────────────
 
-CREATE TABLE company_documents (
+CREATE TABLE IF NOT EXISTS company_documents (
   id              TEXT              NOT NULL,
   tenant_id       CHAR(36)          NOT NULL,
   company_id      TEXT              NOT NULL,
@@ -42,16 +48,16 @@ CREATE TABLE company_documents (
     FOREIGN KEY (previous_doc_id) REFERENCES company_documents(id)
 );
 
-CREATE INDEX company_documents_tenant_id_idx       ON company_documents(tenant_id);
-CREATE INDEX company_documents_company_id_idx      ON company_documents(company_id);
-CREATE INDEX company_documents_tenant_doc_type_idx ON company_documents(tenant_id, doc_type);
-CREATE INDEX company_documents_tenant_status_idx   ON company_documents(tenant_id, status);
-CREATE INDEX company_documents_tenant_expiry_idx   ON company_documents(tenant_id, expiry_date);
+CREATE INDEX IF NOT EXISTS company_documents_tenant_id_idx       ON company_documents(tenant_id);
+CREATE INDEX IF NOT EXISTS company_documents_company_id_idx      ON company_documents(company_id);
+CREATE INDEX IF NOT EXISTS company_documents_tenant_doc_type_idx ON company_documents(tenant_id, doc_type);
+CREATE INDEX IF NOT EXISTS company_documents_tenant_status_idx   ON company_documents(tenant_id, status);
+CREATE INDEX IF NOT EXISTS company_documents_tenant_expiry_idx   ON company_documents(tenant_id, expiry_date);
 
 -- Tenant RLS
 ALTER TABLE company_documents ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY company_documents_tenant_isolation ON company_documents
+CREATE POLICY IF NOT EXISTS company_documents_tenant_isolation ON company_documents
   USING (
     current_setting('app.bypass_rls', true) = 'on'
     OR tenant_id::text = current_setting('app.tenant_id', true)
@@ -62,7 +68,7 @@ CREATE POLICY company_documents_tenant_isolation ON company_documents
   );
 
 -- Company RLS
-CREATE POLICY company_documents_company_isolation ON company_documents
+CREATE POLICY IF NOT EXISTS company_documents_company_isolation ON company_documents
   USING (
     current_setting('app.bypass_company', true)::boolean IS TRUE
     OR company_id::text = current_setting('app.company_id', true)
@@ -76,11 +82,11 @@ CREATE POLICY company_documents_company_isolation ON company_documents
 
 -- ─── 3. Add DOCUMENT_EXPIRY_ALERT to notification_type enum ──────────────────
 
-ALTER TYPE "NotificationType" ADD VALUE 'DOCUMENT_EXPIRY_ALERT';
+ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'DOCUMENT_EXPIRY_ALERT';
 
 -- ─── 4. expiry_notification_logs table ────────────────────────────────────────
 
-CREATE TABLE expiry_notification_logs (
+CREATE TABLE IF NOT EXISTS expiry_notification_logs (
   id           TEXT        NOT NULL,
   tenant_id    CHAR(36)    NOT NULL,
   source       TEXT        NOT NULL,
@@ -95,7 +101,7 @@ CREATE TABLE expiry_notification_logs (
 );
 
 -- One notification per (tenant, item, band) per calendar day
-CREATE UNIQUE INDEX expiry_notification_logs_dedup_idx
+CREATE UNIQUE INDEX IF NOT EXISTS expiry_notification_logs_dedup_idx
   ON expiry_notification_logs (tenant_id, source, source_id, doc_kind, band, notified_on);
 
 -- ─── 5. get_expiry_band helper ────────────────────────────────────────────────
@@ -116,7 +122,7 @@ $$;
 -- security_barrier prevents optimizer from pushing outer WHERE clauses inside
 -- the view, which could bypass the base-table RLS checks.
 
-CREATE VIEW expiry_items_v WITH (security_barrier = true) AS
+CREATE OR REPLACE VIEW expiry_items_v WITH (security_barrier = true) AS
 
   -- Gate passes ─────────────────────────────────────────────────────────────
   SELECT
