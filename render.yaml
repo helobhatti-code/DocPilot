@@ -5,7 +5,7 @@ services:
     plan: free
     branch: main
     buildCommand: npm install --include=dev && npm run prisma:generate && npm run build --workspace=apps/api
-    startCommand: cd apps/api && npx prisma migrate deploy && node dist/src/main
+    startCommand: cd apps/api && npx prisma migrate deploy && npx prisma db seed && node dist/src/main
     envVars:
       - key: NODE_ENV
         value: production
