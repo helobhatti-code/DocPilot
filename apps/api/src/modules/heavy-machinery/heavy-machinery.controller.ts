@@ -59,6 +59,13 @@ export class HeavyMachineryController {
     return this.svc.list(q);
   }
 
+  @Get('stats')
+  @ApiOperation({ summary: 'Aggregate counts for dashboard Machinery tab' })
+  @Roles(UserRole.ADMIN, UserRole.PM, UserRole.HR, UserRole.SECRETARY, UserRole.VIEWER)
+  stats() {
+    return this.svc.stats();
+  }
+
   @Post()
   @Roles(UserRole.ADMIN, UserRole.PM, UserRole.HR, UserRole.SECRETARY)
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateMachineryDto) {

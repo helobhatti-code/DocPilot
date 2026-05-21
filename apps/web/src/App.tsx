@@ -35,7 +35,6 @@ const MachineryList       = lazy(() => import('@/pages/machinery/MachineryList')
 const MachineryForm       = lazy(() => import('@/pages/machinery/MachineryForm'));
 const CompanyDocumentsList = lazy(() => import('@/pages/company-documents/index'));
 const CompanyDocumentForm  = lazy(() => import('@/pages/company-documents/CompanyDocumentForm'));
-const ExpiryDashboard      = lazy(() => import('@/pages/expiry-dashboard'));
 const AlarmThresholds      = lazy(() => import('@/pages/system/AlarmThresholds'));
 
 function PageFallback() {
@@ -88,7 +87,8 @@ export default function App() {
           <Route path="/company-documents/new"          element={<CompanyDocumentForm />} />
           <Route path="/company-documents/:id/edit"     element={<CompanyDocumentForm />} />
 
-          <Route path="/expiry-dashboard"               element={<ExpiryDashboard />} />
+          {/* Expiry Dashboard merged into /dashboard as a tab. Preserve deep-links. */}
+          <Route path="/expiry-dashboard" element={<Navigate to="/dashboard" replace state={{ openExpiry: true }} />} />
 
           <Route path="/system/settings" element={
             <ProtectedRoute roles={['ADMIN', 'SUPER_ADMIN']}><Settings /></ProtectedRoute>

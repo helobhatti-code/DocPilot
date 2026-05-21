@@ -111,6 +111,44 @@ export class CompanyDocumentsService {
     return attachExpiryBands(doc as unknown as Record<string, unknown>);
   }
 
+  async stats() {
+    const rows = await this.prisma.companyDocument.findMany({
+      where: { isActive: true },
+      select: { id: true, docType: true, docName: true, expiryDate: true, status: true },
+    });
+
+    const byType: Record<string, number> = {};
+    const byBand: Record<string, number> = { expired: 0, '7d': 0, '14d': 0, '30d': 0, valid: 0 };
+    let valid = 0, expiringSoon = 0, expired = 0;
+
+    const items = rows.map((r) => {
+      byType[r.docType] = (byType[r.docType] ?? 0) + 1;
+      const days = Math.ceil((r.expiryDate.getTime() - Date.now()) / 86_400_000);
+      let band: 'expired' | '7d' | '14d' | '30d' | 'valid' = 'valid';
+      if (days < 0) { band = 'expired'; expired++; }
+      else if (days <= 7) { band = '7d'; expiringSoon++; }
+      else if (days <= 14) { band = '14d'; expiringSoon++; }
+      else if (days <= 30) { band = '30d'; expiringSoon++; }
+      else { valid++; }
+      byBand[band] = (byBand[band] ?? 0) + 1;
+      return { id: r.id, label: r.docName, daysUntilExpiry: days };
+    });
+
+    const soonest = [...items]
+      .sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry)
+      .slice(0, 5);
+
+    return {
+      total: rows.length,
+      valid,
+      expiringSoon,
+      expired,
+      byType,
+      byBand,
+      soonest,
+    };
+  }
+
   async list(query: CompanyDocumentFiltersDto) {
     const page     = query.page ?? 1;
     const pageSize = query.pageSize ?? 25;

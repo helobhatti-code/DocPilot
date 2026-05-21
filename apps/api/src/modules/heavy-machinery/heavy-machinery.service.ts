@@ -197,6 +197,80 @@ export class HeavyMachineryService {
     return this.addBands(updated);
   }
 
+  async stats() {
+    const rows = await this.prisma.heavyMachinery.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        make: true,
+        machineType: true,
+        serialNumber: true,
+        status: true,
+        projectSite: true,
+        operatorLicenseExpiryDate: true,
+        inspectionExpiryDate: true,
+        rtaRegistrationExpiryDate: true,
+        liftingTestExpiryDate: true,
+        insuranceExpiryDate: true,
+        civilDefenseExpiryDate: true,
+      },
+    });
+
+    const byStatus: Record<string, number> = { ACTIVE: 0, IDLE: 0, MAINTENANCE: 0, OUT_OF_SERVICE: 0 };
+    const byBand: Record<string, number> = { expired: 0, '7d': 0, '14d': 0, '30d': 0, valid: 0 };
+    const bySite: Record<string, number> = {};
+    let expiringWithin30 = 0;
+
+    const items = rows.map((r) => {
+      byStatus[r.status] = (byStatus[r.status] ?? 0) + 1;
+      const site = r.projectSite ?? 'Unassigned';
+      bySite[site] = (bySite[site] ?? 0) + 1;
+
+      const allDates = [
+        r.operatorLicenseExpiryDate,
+        r.inspectionExpiryDate,
+        r.rtaRegistrationExpiryDate,
+        r.liftingTestExpiryDate,
+        r.insuranceExpiryDate,
+        r.civilDefenseExpiryDate,
+      ];
+      const bands = allDates
+        .map((d) => computeExpiryBand(d))
+        .filter((b): b is ExpiryBand => b !== null);
+      bands.forEach((b) => { byBand[b] = (byBand[b] ?? 0) + 1; });
+      const worst = bands.length ? worstBand(bands) : null;
+      if (worst && worst !== 'valid' && worst !== 'expired') expiringWithin30++;
+
+      const days = allDates
+        .filter((d): d is Date => !!d)
+        .map((d) => Math.ceil((d.getTime() - Date.now()) / 86_400_000));
+      const minDays = days.length ? Math.min(...days) : null;
+
+      return {
+        id: r.id,
+        label: `${r.make} ${r.machineType} #${r.serialNumber}`,
+        worst,
+        daysUntilExpiry: minDays,
+      };
+    });
+
+    const soonest = items
+      .filter((i) => i.daysUntilExpiry !== null)
+      .sort((a, b) => (a.daysUntilExpiry! - b.daysUntilExpiry!))
+      .slice(0, 5);
+
+    return {
+      total: rows.length,
+      active: byStatus.ACTIVE ?? 0,
+      idleOrMaintenance: (byStatus.IDLE ?? 0) + (byStatus.MAINTENANCE ?? 0),
+      byStatus,
+      byBand,
+      bySite,
+      expiringWithin30,
+      soonest,
+    };
+  }
+
   async softDelete(id: string) {
     const existing = await this.prisma.heavyMachinery.findUnique({ where: { id }, select: { id: true } });
     if (!existing) throw new NotFoundException('Heavy machinery not found');

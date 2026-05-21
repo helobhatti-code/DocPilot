@@ -217,6 +217,77 @@ export class VehiclesService {
     return this.addBands(updated);
   }
 
+  async stats() {
+    const rows = await this.prisma.vehicle.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        vehicleType: true,
+        plateEmirate: true,
+        carMake: true,
+        plateNumber: true,
+        carLicenseExpiryDate: true,
+        insuranceExpiryDate: true,
+        residentialMawaqifExpiryDate: true,
+        normalMawaqifExpiryDate: true,
+        hasResidentialMawaqif: true,
+        hasNormalMawaqif: true,
+        updatedAt: true,
+      },
+    });
+
+    const byBand: Record<string, number> = { expired: 0, '7d': 0, '14d': 0, '30d': 0, valid: 0 };
+    const byEmirate: Record<string, number> = {};
+    const byType: Record<string, number> = { PRIVATE: 0, COMPANY: 0 };
+    let expiringWithin30 = 0;
+
+    const items = rows.map((r) => {
+      const carLic   = computeExpiryBand(r.carLicenseExpiryDate);
+      const ins      = computeExpiryBand(r.insuranceExpiryDate);
+      const resMaw   = r.hasResidentialMawaqif ? computeExpiryBand(r.residentialMawaqifExpiryDate) : null;
+      const norMaw   = r.hasNormalMawaqif      ? computeExpiryBand(r.normalMawaqifExpiryDate)      : null;
+      const bands    = [carLic, ins, resMaw, norMaw].filter((b): b is ExpiryBand => b !== null);
+      const worst    = bands.length ? worstBand(bands) : null;
+      bands.forEach((b) => { byBand[b] = (byBand[b] ?? 0) + 1; });
+      byEmirate[r.plateEmirate] = (byEmirate[r.plateEmirate] ?? 0) + 1;
+      byType[r.vehicleType]      = (byType[r.vehicleType] ?? 0) + 1;
+      if (worst && worst !== 'valid' && worst !== 'expired') expiringWithin30++;
+
+      const minDays = Math.min(
+        ...[r.carLicenseExpiryDate, r.insuranceExpiryDate]
+          .filter((d): d is Date => !!d)
+          .map((d) => Math.ceil((d.getTime() - Date.now()) / 86_400_000)),
+      );
+      return {
+        id: r.id,
+        label: `${r.carMake} – ${r.plateNumber}`,
+        worst,
+        daysUntilExpiry: Number.isFinite(minDays) ? minDays : null,
+        updatedAt: r.updatedAt,
+      };
+    });
+
+    const soonest = items
+      .filter((i) => i.daysUntilExpiry !== null)
+      .sort((a, b) => (a.daysUntilExpiry! - b.daysUntilExpiry!))
+      .slice(0, 5);
+
+    const recentlyUpdated = [...items]
+      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+      .slice(0, 5)
+      .map((i) => ({ id: i.id, label: i.label, updatedAt: i.updatedAt }));
+
+    return {
+      total: rows.length,
+      byType,
+      byEmirate,
+      byBand,
+      expiringWithin30,
+      soonest,
+      recentlyUpdated,
+    };
+  }
+
   async softDelete(id: string) {
     const existing = await this.prisma.vehicle.findUnique({ where: { id }, select: { id: true } });
     if (!existing) throw new NotFoundException('Vehicle not found');

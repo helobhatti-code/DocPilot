@@ -52,6 +52,13 @@ export class CompanyDocumentsController {
     return this.svc.list(query);
   }
 
+  @Get('stats')
+  @ApiOperation({ summary: 'Aggregate counts for dashboard Company Docs tab' })
+  @Roles(UserRole.ADMIN, UserRole.PM, UserRole.HR, UserRole.SECRETARY, UserRole.VIEWER)
+  stats() {
+    return this.svc.stats();
+  }
+
   @Get(':id')
   @Roles(UserRole.ADMIN, UserRole.PM, UserRole.HR, UserRole.SECRETARY, UserRole.VIEWER)
   detail(@Param('id') id: string) {
