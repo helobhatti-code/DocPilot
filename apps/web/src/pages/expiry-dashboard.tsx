@@ -15,7 +15,6 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -134,13 +133,6 @@ function SourceBadge({ source }: { source: string }) {
 function ExpiryByModuleChart({ summary }: { summary?: ExpirySummary }) {
   if (!summary) return null;
 
-  const chartData = ALL_BANDS.map((band) => {
-    const row: Record<string, unknown> = { band: BAND_LABELS[band] };
-    for (const src of ALL_SOURCES) {
-      row[src] = 0;
-    }
-    return row;
-  });
 
   // We need per-band, per-source breakdown — but summary only has totals by band and source.
   // Since we only have aggregated totals from /expiry/summary, show a horizontal bar

@@ -1,6 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
-  Bell,
   Filter,
   Plus,
   FileText,
@@ -20,7 +19,6 @@ import type {
   ExpiryBand,
   Paginated,
 } from '@/lib/types';
-import toast from 'react-hot-toast';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -258,7 +256,6 @@ function buildColumns(
 
 export default function CompanyDocumentsList() {
   const nav = useNavigate();
-  const qc  = useQueryClient();
 
   const [activeTab,  setActiveTab]  = useState<CompanyDocType>('TRADE_LICENSE');
   const [page,       setPage]       = useState(1);

@@ -338,7 +338,7 @@ export default function CompanyDocumentForm() {
       if (isEdit) return api.patch(`/company-documents/${id}`, payload);
       return api.post('/company-documents', payload);
     },
-    onSuccess: (res) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['company-documents'] });
       if (id) qc.invalidateQueries({ queryKey: ['company-document', id] });
       toast.success(isEdit ? 'Document updated' : 'Document created');
