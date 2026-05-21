@@ -57,28 +57,33 @@ CREATE INDEX IF NOT EXISTS company_documents_tenant_expiry_idx   ON company_docu
 -- Tenant RLS
 ALTER TABLE company_documents ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS company_documents_tenant_isolation ON company_documents
-  USING (
-    current_setting('app.bypass_rls', true) = 'on'
-    OR tenant_id::text = current_setting('app.tenant_id', true)
-  )
-  WITH CHECK (
-    current_setting('app.bypass_rls', true) = 'on'
-    OR tenant_id::text = current_setting('app.tenant_id', true)
-  );
+DO $$ BEGIN
+  CREATE POLICY company_documents_tenant_isolation ON company_documents
+    USING (
+      current_setting('app.bypass_rls', true) = 'on'
+      OR tenant_id::text = current_setting('app.tenant_id', true)
+    )
+    WITH CHECK (
+      current_setting('app.bypass_rls', true) = 'on'
+      OR tenant_id::text = current_setting('app.tenant_id', true)
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
--- Company RLS
-CREATE POLICY IF NOT EXISTS company_documents_company_isolation ON company_documents
-  USING (
-    current_setting('app.bypass_company', true)::boolean IS TRUE
-    OR company_id::text = current_setting('app.company_id', true)
-    OR current_setting('app.company_id', true) = ''
-  )
-  WITH CHECK (
-    current_setting('app.bypass_company', true)::boolean IS TRUE
-    OR company_id::text = current_setting('app.company_id', true)
-    OR current_setting('app.company_id', true) = ''
-  );
+DO $$ BEGIN
+  CREATE POLICY company_documents_company_isolation ON company_documents
+    USING (
+      current_setting('app.bypass_company', true)::boolean IS TRUE
+      OR company_id::text = current_setting('app.company_id', true)
+      OR current_setting('app.company_id', true) = ''
+    )
+    WITH CHECK (
+      current_setting('app.bypass_company', true)::boolean IS TRUE
+      OR company_id::text = current_setting('app.company_id', true)
+      OR current_setting('app.company_id', true) = ''
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ─── 3. Add DOCUMENT_EXPIRY_ALERT to notification_type enum ──────────────────
 
