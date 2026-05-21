@@ -56,7 +56,7 @@ export default function Dashboard() {
       <div>
         <h1 className="text-2xl font-bold tracking-heading">DocPilot</h1>
         <p className="text-text-secondary text-sm mt-0.5">
-          Operational overview — gate passes, compliance and authority handover.
+          Manage passes, fleet, employees and company documents.
         </p>
       </div>
 
@@ -69,22 +69,30 @@ export default function Dashboard() {
               key={t.key}
               onClick={() => setTab(t.key)}
               className={clsx(
-                'relative inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-150',
+                'group relative inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-150',
                 isActive
                   ? 'bg-bg-input text-text-primary shadow-sm'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-bg-input/50',
+                  : 'text-text-secondary hover:text-text-primary hover:bg-bg-input',
               )}
             >
-              <Icon size={15} className={isActive ? 'text-brand-orange' : 'text-text-secondary group-hover:text-text-primary'} />
+              <Icon
+                size={15}
+                className={clsx(
+                  'transition-colors',
+                  isActive ? 'text-brand-orange' : 'text-text-secondary group-hover:text-brand-orange',
+                )}
+              />
               <span>{t.label}</span>
-              {isActive && (
-                <span
-                  className="absolute left-1/2 -translate-x-1/2 -bottom-0.5 h-[3px] w-[60%] rounded-full"
-                  style={{
-                    background: 'linear-gradient(90deg, #F47316 0%, #FC5185 100%)',
-                  }}
-                />
-              )}
+              {/* Active: solid gradient underline. Inactive: same underline appears on hover. */}
+              <span
+                className={clsx(
+                  'absolute left-1/2 -translate-x-1/2 -bottom-0.5 h-[3px] w-[60%] rounded-full transition-opacity duration-150',
+                  isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+                )}
+                style={{
+                  background: 'linear-gradient(90deg, #F47316 0%, #FC5185 100%)',
+                }}
+              />
             </button>
           );
         })}
