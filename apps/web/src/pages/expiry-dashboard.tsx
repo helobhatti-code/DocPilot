@@ -369,8 +369,8 @@ export default function ExpiryDashboard() {
         />
       </div>
 
-      {/* Charts row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Charts — full-width rows so they don't leave empty gutters */}
+      <div className="space-y-6">
         <ExpiryByModuleChart summary={summary} />
         <ExpiryBySourceChart summary={summary} />
       </div>
