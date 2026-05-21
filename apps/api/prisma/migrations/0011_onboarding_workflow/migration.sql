@@ -1,6 +1,10 @@
 -- Migration 0011: New Employees onboarding workflow (Phase 2).
 -- Adds sequential state-machine tracking for new employees through visa,
 -- work permit, medical, insurance, residency, and EID stages.
+--
+-- All statements are idempotent so the migration can be re-applied safely
+-- if a previous run failed partway through (heal-prisma-migrations.cjs at
+-- boot rolls back failed rows so migrate deploy will retry them).
 
 -- 1. Add new notification type to the enum
 ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'ONBOARDING_VISA_GRACE_ALARM';
@@ -15,7 +19,7 @@ CREATE INDEX IF NOT EXISTS employees_tenant_is_new_employee_idx
   ON employees(tenant_id, is_new_employee);
 
 -- 3. Create the onboarding_tasks table
-CREATE TABLE onboarding_tasks (
+CREATE TABLE IF NOT EXISTS onboarding_tasks (
   id            TEXT        NOT NULL,
   tenant_id     CHAR(36)    NOT NULL,
   company_id    TEXT        NOT NULL,
@@ -45,11 +49,14 @@ CREATE INDEX IF NOT EXISTS onboarding_tasks_employee_id_idx
 CREATE INDEX IF NOT EXISTS onboarding_tasks_employee_stage_idx
   ON onboarding_tasks(employee_id, stage);
 
--- 4. Enable RLS on onboarding_tasks (same pattern as other tenant-scoped tables)
+-- 4. Enable RLS on onboarding_tasks (idempotent)
 ALTER TABLE onboarding_tasks ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY onboarding_tasks_tenant_isolation ON onboarding_tasks
-  USING (
-    current_setting('app.bypass_rls', TRUE) = 'on'
-    OR tenant_id = current_setting('app.tenant_id', TRUE)
-  );
+DO $$ BEGIN
+  CREATE POLICY onboarding_tasks_tenant_isolation ON onboarding_tasks
+    USING (
+      current_setting('app.bypass_rls', TRUE) = 'on'
+      OR tenant_id = current_setting('app.tenant_id', TRUE)
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
