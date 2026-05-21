@@ -33,6 +33,8 @@ const VehiclesList        = lazy(() => import('@/pages/vehicles/VehiclesList'));
 const VehicleForm         = lazy(() => import('@/pages/vehicles/VehicleForm'));
 const MachineryList       = lazy(() => import('@/pages/machinery/MachineryList'));
 const MachineryForm       = lazy(() => import('@/pages/machinery/MachineryForm'));
+const EmployeesList       = lazy(() => import('@/pages/employees/EmployeesList'));
+const EmployeeForm        = lazy(() => import('@/pages/employees/EmployeeForm'));
 const CompanyDocumentsList = lazy(() => import('@/pages/company-documents/index'));
 const CompanyDocumentForm  = lazy(() => import('@/pages/company-documents/CompanyDocumentForm'));
 const AlarmThresholds      = lazy(() => import('@/pages/system/AlarmThresholds'));
@@ -78,10 +80,13 @@ export default function App() {
           <Route path="/machinery/new"      element={<MachineryForm />} />
           <Route path="/machinery/:id/edit" element={<MachineryForm />} />
 
-          {/* Employees module merged into Staff (People). Old links redirect. */}
-          <Route path="/employees"          element={<Navigate to="/staff?personType=DIRECT_EMPLOYEE" replace />} />
-          <Route path="/employees/new"      element={<Navigate to="/staff" replace />} />
-          <Route path="/employees/:id/edit" element={<Navigate to="/staff" replace />} />
+          {/* Employees module: list is the new-hires onboarding pipeline.
+              The People page (/staff) is the directory of all personnel; the
+              onboarding workflow continues to live under /employees because
+              it tracks per-stage tasks and grace periods. */}
+          <Route path="/employees"          element={<EmployeesList />} />
+          <Route path="/employees/new"      element={<EmployeeForm />} />
+          <Route path="/employees/:id/edit" element={<EmployeeForm />} />
 
           <Route path="/company-documents"              element={<CompanyDocumentsList />} />
           <Route path="/company-documents/new"          element={<CompanyDocumentForm />} />

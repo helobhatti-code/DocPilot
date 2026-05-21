@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, Eye, Pencil, Plus, PowerOff, Search, Trash2, UserCircle, Users as UsersIcon } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -11,6 +11,8 @@ import { EmptyState } from '@/components/EmptyState';
 import { FileUpload } from '@/components/FileUpload';
 import { api } from '@/lib/api';
 import { ExpiryBand, PersonType, Staff, SubcontractorOrg } from '@/lib/types';
+
+const NewEmployeesPipeline = lazy(() => import('@/pages/employees/NewEmployeesPipeline'));
 
 type TabKey = 'ALL' | 'DIRECT_EMPLOYEE' | 'SUBCONTRACTOR';
 
@@ -164,16 +166,13 @@ export default function StaffPage() {
           <button
             onClick={() => setEmployeeSubTab('NEW_HIRES')}
             className={clsx(
-              'px-3 py-1 rounded-md font-medium inline-flex items-center gap-2',
+              'px-3 py-1 rounded-md font-medium',
               employeeSubTab === 'NEW_HIRES'
                 ? 'bg-bg-input text-text-primary'
                 : 'text-text-secondary hover:text-text-primary',
             )}
           >
             New Hires
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400/15 text-amber-300">
-              Coming Soon
-            </span>
           </button>
         </div>
       )}
@@ -189,11 +188,9 @@ export default function StaffPage() {
       </div>
 
       {tab === 'DIRECT_EMPLOYEE' && employeeSubTab === 'NEW_HIRES' ? (
-        <EmptyState
-          icon={UserCircle}
-          title="New Hires — Coming Soon"
-          description="Onboarding workflows for new employees will land in Phase 2."
-        />
+        <Suspense fallback={<div className="text-text-secondary text-sm py-8 text-center">Loading onboarding pipeline…</div>}>
+          <NewEmployeesPipeline />
+        </Suspense>
       ) : !isLoading && filtered.length === 0 ? (
         <EmptyState
           icon={UsersIcon}
