@@ -87,17 +87,16 @@ CREATE TABLE expiry_notification_logs (
   source_id    TEXT        NOT NULL,
   doc_kind     TEXT        NOT NULL,
   band         TEXT        NOT NULL,
-  notified_on  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  notified_on  DATE        NOT NULL DEFAULT CURRENT_DATE,
 
   CONSTRAINT expiry_notification_logs_pkey PRIMARY KEY (id),
   CONSTRAINT expiry_notification_logs_tenant_fkey
     FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
 );
 
--- One notification per (tenant, item, band) per calendar day — prevents duplicate
--- alerts if the sweep runs more than once on the same day (e.g. after a restart).
+-- One notification per (tenant, item, band) per calendar day
 CREATE UNIQUE INDEX expiry_notification_logs_dedup_idx
-  ON expiry_notification_logs (tenant_id, source, source_id, doc_kind, band, (notified_on::date));
+  ON expiry_notification_logs (tenant_id, source, source_id, doc_kind, band, notified_on);
 
 -- ─── 5. get_expiry_band helper ────────────────────────────────────────────────
 

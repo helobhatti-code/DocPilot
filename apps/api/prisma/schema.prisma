@@ -640,7 +640,7 @@ model ExpiryNotificationLog {
   sourceId    String   @map("source_id")
   docKind     String   @map("doc_kind")
   band        String
-  notifiedOn  DateTime @default(now()) @map("notified_on")
+  notifiedOn  DateTime @default(now()) @map("notified_on") @db.Date
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 

@@ -253,15 +253,12 @@ export class ExpiryService {
         // Dedup: skip if already notified today for this (source, item, docKind, band)
         const existing = await (tx as unknown as typeof this.prisma).expiryNotificationLog.findFirst({
           where: {
-            tenantId: item.tenant_id,
-            source:   item.source,
-            sourceId: item.source_id,
-            docKind:  item.doc_kind,
+            tenantId:   item.tenant_id,
+            source:     item.source,
+            sourceId:   item.source_id,
+            docKind:    item.doc_kind,
             band,
-            notifiedOn: {
-              gte: new Date(`${todayStr}T00:00:00.000Z`),
-              lt:  tomorrow,
-            },
+            notifiedOn: new Date(todayStr),
           },
           select: { id: true },
         });
