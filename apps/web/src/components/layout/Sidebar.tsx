@@ -19,18 +19,13 @@ import {
   ScrollText,
   Settings,
   Shield,
-  ShieldAlert,
   ShieldCheck,
   Upload,
   Users,
   UserSquare,
-  UserCircle,
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { api } from '@/lib/api';
-import type { ExpirySummary } from '@/lib/types';
 import { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { authStore, useAuth } from '@/store/auth';
 
@@ -40,22 +35,29 @@ interface Item {
   icon: LucideIcon;
   iconColor: string;
   iconBg: string;
+  end?: boolean;
 }
 
-const MAIN: Item[] = [
-  { to: '/dashboard',     label: 'Dashboard',     icon: LayoutDashboard, iconColor: 'text-brand-orange',  iconBg: 'bg-brand-orange/15'  },
-  { to: '/passes',        label: 'Passes',        icon: BadgeCheck,      iconColor: 'text-sky-400',        iconBg: 'bg-sky-400/15'       },
-  { to: '/passes/import', label: 'Bulk Import',   icon: Upload,          iconColor: 'text-violet-400',     iconBg: 'bg-violet-400/15'    },
-  { to: '/renewals',      label: 'Renewals',      icon: RotateCcw,       iconColor: 'text-emerald-400',    iconBg: 'bg-emerald-400/15'   },
-  { to: '/cancellations', label: 'Cancellations', icon: Ban,             iconColor: 'text-rose-400',       iconBg: 'bg-rose-400/15'      },
-  { to: '/staff',         label: 'Staff',         icon: UserSquare,      iconColor: 'text-purple-400',     iconBg: 'bg-purple-400/15'    },
-  { to: '/reports',       label: 'Reports',       icon: FileText,        iconColor: 'text-brand-mid',      iconBg: 'bg-brand-mid/15'     },
-  { to: '/notifications', label: 'Notifications', icon: Bell,            iconColor: 'text-amber-400',      iconBg: 'bg-amber-400/15'     },
-  { to: '/vehicles',     label: 'Vehicles',       icon: Car,             iconColor: 'text-cyan-500',       iconBg: 'bg-cyan-500/15'      },
-  { to: '/machinery',    label: 'Heavy Machinery', icon: Construction,  iconColor: 'text-yellow-500',     iconBg: 'bg-yellow-500/15'    },
-  { to: '/employees',          label: 'Employees',        icon: UserCircle,  iconColor: 'text-green-400',    iconBg: 'bg-green-400/15'    },
-  { to: '/company-documents',  label: 'Company Docs',     icon: FolderOpen,  iconColor: 'text-teal-300',     iconBg: 'bg-teal-300/15'      },
-  { to: '/expiry-dashboard',   label: 'Expiry Dashboard', icon: ShieldAlert, iconColor: 'text-rose-400',     iconBg: 'bg-rose-400/15'      },
+const PASSES_CHILDREN: Item[] = [
+  { to: '/passes',        label: 'All Passes',    icon: BadgeCheck, iconColor: 'text-sky-400',     iconBg: 'bg-sky-400/15',     end: true },
+  { to: '/renewals',      label: 'Renewals',      icon: RotateCcw,  iconColor: 'text-emerald-400', iconBg: 'bg-emerald-400/15' },
+  { to: '/cancellations', label: 'Cancellations', icon: Ban,        iconColor: 'text-rose-400',    iconBg: 'bg-rose-400/15'    },
+  { to: '/passes/import', label: 'Bulk Import',   icon: Upload,     iconColor: 'text-violet-400',  iconBg: 'bg-violet-400/15'  },
+];
+
+const PASSES_GROUP_PATHS = ['/passes', '/renewals', '/cancellations', '/passes/import'];
+
+const MAIN_BEFORE_PASSES: Item[] = [
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, iconColor: 'text-brand-orange', iconBg: 'bg-brand-orange/15' },
+];
+
+const MAIN_AFTER_PASSES: Item[] = [
+  { to: '/staff',              label: 'People',          icon: UserSquare,  iconColor: 'text-purple-400', iconBg: 'bg-purple-400/15' },
+  { to: '/reports',            label: 'Reports',         icon: FileText,    iconColor: 'text-brand-mid',  iconBg: 'bg-brand-mid/15'  },
+  { to: '/notifications',      label: 'Notifications',   icon: Bell,        iconColor: 'text-amber-400',  iconBg: 'bg-amber-400/15'  },
+  { to: '/vehicles',           label: 'Vehicles',        icon: Car,         iconColor: 'text-cyan-500',   iconBg: 'bg-cyan-500/15'   },
+  { to: '/machinery',          label: 'Heavy Machinery', icon: Construction, iconColor: 'text-yellow-500', iconBg: 'bg-yellow-500/15' },
+  { to: '/company-documents',  label: 'Company Docs',    icon: FolderOpen,  iconColor: 'text-teal-300',   iconBg: 'bg-teal-300/15'   },
 ];
 
 const SYSTEM: Item[] = [
@@ -70,6 +72,11 @@ const SYSTEM: Item[] = [
 
 export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const [systemOpen, setSystemOpen] = useState(true);
+  const location = useLocation();
+  const isPassesActive = PASSES_GROUP_PATHS.some((p) =>
+    p === '/passes' ? location.pathname === '/passes' || location.pathname.startsWith('/passes/') : location.pathname.startsWith(p),
+  );
+  const [passesOpen, setPassesOpen] = useState(isPassesActive);
   const user    = useAuth((s) => s.user);
   const nav     = useNavigate();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
@@ -113,7 +120,19 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
 
       {/* Nav */}
       <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
-        {MAIN.map((it) => (
+        {MAIN_BEFORE_PASSES.map((it) => (
+          <SideLink key={it.to} item={it} collapsed={collapsed} />
+        ))}
+
+        {/* Passes group */}
+        <PassesGroup
+          collapsed={collapsed}
+          open={passesOpen}
+          isActive={isPassesActive}
+          onToggle={() => setPassesOpen((v) => !v)}
+        />
+
+        {MAIN_AFTER_PASSES.map((it) => (
           <SideLink key={it.to} item={it} collapsed={collapsed} />
         ))}
 
@@ -225,32 +244,81 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
   );
 }
 
-function ExpiryBadge({ collapsed }: { collapsed: boolean }) {
-  const { data } = useQuery({
-    queryKey: ['expiry-summary-badge'],
-    queryFn: async () => (await api.get('/expiry/summary')).data as ExpirySummary,
-    refetchInterval: 5 * 60_000,
-    staleTime: 4 * 60_000,
-  });
-  const urgentCount = (data?.byBand.expired ?? 0) + (data?.byBand['7d'] ?? 0);
-  if (urgentCount === 0) return null;
+function PassesGroup({
+  collapsed,
+  open,
+  isActive,
+  onToggle,
+}: {
+  collapsed: boolean;
+  open: boolean;
+  isActive: boolean;
+  onToggle: () => void;
+}) {
+  // In collapsed mode, render children inline (mirrors how SYSTEM behaves)
+  if (collapsed) {
+    return (
+      <>
+        {PASSES_CHILDREN.map((it) => (
+          <SideLink key={it.to} item={it} collapsed={collapsed} />
+        ))}
+      </>
+    );
+  }
   return (
-    <span className={clsx(
-      'flex-shrink-0 min-w-4 h-4 px-1 bg-rose-500 text-white text-[9px] font-bold rounded-full grid place-items-center leading-none',
-      collapsed ? 'absolute top-0.5 right-0.5' : '',
-    )}>
-      {urgentCount > 99 ? '99+' : urgentCount}
-    </span>
+    <div>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="relative w-full flex items-center gap-3 px-2 py-1.5 rounded-xl text-sm transition-all duration-150 group"
+        aria-expanded={open}
+      >
+        {isActive && (
+          <span
+            className="absolute inset-0 rounded-xl"
+            style={{
+              background: 'linear-gradient(90deg, rgba(244,115,22,0.22) 0%, rgba(244,115,22,0.06) 100%)',
+              borderLeft: '3px solid #F47316',
+            }}
+          />
+        )}
+        <span
+          className={clsx(
+            'relative flex items-center justify-center w-7 h-7 rounded-lg flex-shrink-0 transition-colors',
+            isActive ? 'bg-sky-400/15' : 'group-hover:bg-sky-400/15',
+          )}
+        >
+          <BadgeCheck size={16} className="text-sky-400" />
+        </span>
+        <span
+          className="relative truncate font-medium transition-colors flex-1 text-left"
+          style={{ color: isActive ? 'var(--sidebar-text)' : 'var(--sidebar-muted)' }}
+        >
+          Passes
+        </span>
+        <ChevronDown
+          size={14}
+          className={clsx('relative transition-transform', !open && '-rotate-90')}
+          style={{ color: 'var(--sidebar-faint)' }}
+        />
+      </button>
+      {open && (
+        <div className="ml-3 pl-2 mt-0.5 space-y-0.5 border-l" style={{ borderColor: 'var(--sidebar-border)' }}>
+          {PASSES_CHILDREN.map((it) => (
+            <SideLink key={it.to} item={it} collapsed={collapsed} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
 function SideLink({ item, collapsed }: { item: Item; collapsed: boolean }) {
   const Icon = item.icon;
-  const isExpiryLink = item.to === '/expiry-dashboard';
   return (
     <NavLink
       to={item.to}
-      end={item.to === '/passes'}
+      end={item.end ?? item.to === '/passes'}
       title={collapsed ? item.label : undefined}
       className="relative flex items-center gap-3 px-2 py-1.5 rounded-xl text-sm transition-all duration-150 group"
     >
@@ -275,7 +343,6 @@ function SideLink({ item, collapsed }: { item: Item; collapsed: boolean }) {
             )}
           >
             <Icon size={16} className={item.iconColor} />
-            {isExpiryLink && collapsed && <ExpiryBadge collapsed />}
           </span>
 
           {/* Label */}
@@ -287,7 +354,6 @@ function SideLink({ item, collapsed }: { item: Item; collapsed: boolean }) {
               {item.label}
             </span>
           )}
-          {!collapsed && isExpiryLink && <ExpiryBadge collapsed={false} />}
         </>
       )}
     </NavLink>
