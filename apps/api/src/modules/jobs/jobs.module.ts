@@ -16,6 +16,8 @@ import { GatePassesModule } from '@/modules/gate-passes/gate-passes.module';
 import { RetentionService } from '@/modules/gate-passes/retention.service';
 import { ExpiryModule } from '@/modules/expiry/expiry.module';
 import { ExpiryService } from '@/modules/expiry/expiry.service';
+import { EmployeesModule } from '@/modules/employees/employees.module';
+import { OnboardingService } from '@/modules/employees/onboarding.service';
 
 const QUEUE_NAME = 'gpms-scheduler';
 
@@ -62,6 +64,7 @@ export class SchedulerProcessor {
     private readonly prisma: PrismaService,
     private readonly retention: RetentionService,
     private readonly expirySvc: ExpiryService,
+    private readonly onboarding: OnboardingService,
   ) {}
 
   /**
@@ -232,6 +235,18 @@ export class SchedulerProcessor {
     return this.retention.runDailyPurge();
   }
 
+  /**
+   * Daily 02:00 Asia/Dubai onboarding grace sweep:
+   *   - Employees whose visit-visa cancellation grace period has expired → CANCELLED (terminal)
+   *   - Employees still in grace period → fire ONBOARDING_VISA_GRACE_ALARM notification
+   */
+  @Process('onboarding-grace-sweep')
+  async onboardingGraceSweep() {
+    const result = await this.onboarding.runGracePeriodSweep();
+    this.logger.log(`Onboarding grace sweep: ${result.expired} expired, ${result.alarmed} alarms`);
+    return result;
+  }
+
   /** Flag cancellations pending custody handover for >7 days. */
   @Process('overdue-sweep')
   async overdueSweep() {
@@ -359,6 +374,13 @@ export class JobScheduler implements OnModuleInit {
         removeOnFail: 50,
         jobId: 'overdue-sweep',
       });
+      // 02:00 Asia/Dubai — onboarding grace period sweep
+      await this.queue.add('onboarding-grace-sweep', {}, {
+        repeat: { cron: '0 2 * * *', tz: 'Asia/Dubai' },
+        removeOnComplete: 50,
+        removeOnFail: 50,
+        jobId: 'onboarding-grace-sweep',
+      });
       this.logger.log('Status engine cron jobs registered (Asia/Dubai)');
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -454,6 +476,7 @@ function createBullClient(
     BullModule.registerQueue({ name: QUEUE_NAME }),
     GatePassesModule,
     ExpiryModule,
+    EmployeesModule,
   ],
   providers: [SchedulerProcessor, JobScheduler],
 })

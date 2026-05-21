@@ -145,6 +145,7 @@ enum NotificationType {
   DATA_DELETION_WARNING
   INVITATION
   DOCUMENT_EXPIRY_ALERT
+  ONBOARDING_VISA_GRACE_ALARM
 }
 
 // ----------------------------- Models --------------------------------------
@@ -173,6 +174,7 @@ model Tenant {
   vehicles            Vehicle[]
   heavyMachinery      HeavyMachinery[]
   employees           Employee[]
+  onboardingTasks     OnboardingTask[]
   companyDocuments        CompanyDocument[]
   expiryNotificationLogs  ExpiryNotificationLog[]
   alarmThresholdConfigs   AlarmThresholdConfig[]
@@ -588,17 +590,46 @@ model Employee {
   status                   EmployeeStatus @default(ACTIVE)
   isActive                 Boolean        @default(true) @map("is_active")
   remarks                  String?
+  // Onboarding workflow fields (Phase 2)
+  isNewEmployee            Boolean        @default(false) @map("is_new_employee")
+  onboardingState          String?        @map("onboarding_state")
+  cancellationGraceEndsAt  DateTime?      @map("cancellation_grace_ends_at")
   createdAt                DateTime       @default(now()) @map("created_at")
   updatedAt                DateTime       @updatedAt @map("updated_at")
   createdBy                String?        @map("created_by")
 
-  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  company Company @relation(fields: [companyId], references: [id])
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company         Company         @relation(fields: [companyId], references: [id])
+  onboardingTasks OnboardingTask[]
 
   @@index([tenantId])
   @@index([companyId])
   @@index([tenantId, emiratesIdNo])
+  @@index([tenantId, isNewEmployee])
   @@map("employees")
+}
+
+model OnboardingTask {
+  id           String    @id @default(cuid())
+  tenantId     String    @map("tenant_id") @db.Char(36)
+  companyId    String    @map("company_id")
+  employeeId   String    @map("employee_id")
+  stage        String
+  status       String
+  completedAt  DateTime? @map("completed_at")
+  completedBy  String?   @map("completed_by")
+  attachmentId String?   @map("attachment_id")
+  notes        String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([employeeId])
+  @@index([employeeId, stage])
+  @@map("onboarding_tasks")
 }
 
 model CompanyDocument {

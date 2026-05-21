@@ -29,7 +29,9 @@ import { TenantGuard } from '@/common/guards/tenant.guard';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { EmployeeFiltersDto } from './dto/employee-filters.dto';
+import { AdvanceOnboardingDto, CancelVisaDto } from './dto/onboarding.dto';
 import { EmployeesService } from './employees.service';
+import { OnboardingService } from './onboarding.service';
 
 const ATTACHMENT_KINDS = ['emirates-id', 'visa', 'labor-card', 'passport'] as const;
 
@@ -38,7 +40,10 @@ const ATTACHMENT_KINDS = ['emirates-id', 'visa', 'labor-card', 'passport'] as co
 @Controller('employees')
 @UseGuards(TenantGuard, RolesGuard)
 export class EmployeesController {
-  constructor(private readonly svc: EmployeesService) {}
+  constructor(
+    private readonly svc: EmployeesService,
+    private readonly onboarding: OnboardingService,
+  ) {}
 
   @Get('import/template')
   @ApiOperation({ summary: 'Download empty employees .xlsx template' })
@@ -95,6 +100,37 @@ export class EmployeesController {
   @Roles(UserRole.ADMIN, UserRole.PM, UserRole.HR)
   softDelete(@Param('id') id: string) {
     return this.svc.softDelete(id);
+  }
+
+  // ─── Onboarding workflow ────────────────────────────────────────────────────
+
+  @Get(':id/onboarding')
+  @ApiOperation({ summary: 'Get current onboarding state + full task history for an employee' })
+  @Roles(UserRole.ADMIN, UserRole.PM, UserRole.HR, UserRole.SECRETARY, UserRole.VIEWER)
+  getOnboarding(@Param('id') id: string) {
+    return this.onboarding.getOnboardingState(id);
+  }
+
+  @Post(':id/onboarding/advance')
+  @ApiOperation({ summary: 'Advance to next onboarding stage (enforces sequential gate rules)' })
+  @Roles(UserRole.ADMIN, UserRole.PM, UserRole.HR, UserRole.SECRETARY)
+  advanceOnboarding(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: AdvanceOnboardingDto,
+  ) {
+    return this.onboarding.advance(user, id, dto);
+  }
+
+  @Post(':id/onboarding/cancel')
+  @ApiOperation({ summary: 'Cancel visit visa — sets 15-day grace period, fires daily alarms' })
+  @Roles(UserRole.ADMIN, UserRole.PM, UserRole.HR)
+  cancelVisa(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: CancelVisaDto,
+  ) {
+    return this.onboarding.cancelVisa(user, id, dto);
   }
 
   @Post(':id/attachments')

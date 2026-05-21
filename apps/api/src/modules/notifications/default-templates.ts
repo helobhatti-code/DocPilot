@@ -101,4 +101,10 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
     bodyTemplate:
       '{{displayName}} {{statusLine}}. Please take action to renew or replace the document.',
   },
+  {
+    type: 'ONBOARDING_VISA_GRACE_ALARM',
+    subjectTemplate: 'Visa cancellation grace period: {{employeeName}} — {{daysRemaining}} days remaining',
+    bodyTemplate:
+      'Employee {{employeeName}}\'s visit visa has been cancelled. The 15-day grace period ends on {{graceEndsAt}}.\n\n{{daysRemaining}} day(s) remaining to resolve before the onboarding record is permanently cancelled.\n\nReview: {{actionUrl}}',
+  },
 ];

@@ -113,6 +113,50 @@ export interface Paginated<T> {
 
 export type EmployeeStatus = 'ACTIVE' | 'ON_LEAVE' | 'TERMINATED';
 
+export type OnboardingStage =
+  | 'VISIT_VISA_PENDING'
+  | 'VISIT_VISA_VALID'
+  | 'VISIT_VISA_EXPIRED'
+  | 'VISIT_VISA_CANCELLED'
+  | 'WORK_PERMIT_PENDING'
+  | 'WORK_PERMIT_APPROVED'
+  | 'WORK_PERMIT_REJECTED'
+  | 'MEDICAL_PENDING'
+  | 'MEDICAL_COMPLETED'
+  | 'INSURANCE_PENDING'
+  | 'INSURANCE_COMPLETED'
+  | 'RESIDENCY_PENDING'
+  | 'RESIDENCY_COMPLETED'
+  | 'EID_PENDING'
+  | 'EID_DELIVERED'
+  | 'ONBOARDED'
+  | 'CANCELLED';
+
+export type OnboardingTaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
+
+export interface OnboardingTask {
+  id:           string;
+  employeeId:   string;
+  stage:        OnboardingStage;
+  status:       OnboardingTaskStatus;
+  completedAt?: string | null;
+  completedBy?: string | null;
+  attachmentId?: string | null;
+  notes?:       string | null;
+  createdAt:    string;
+  updatedAt:    string;
+}
+
+export interface OnboardingState {
+  employeeId:               string;
+  employeeName:             string;
+  isNewEmployee:            boolean;
+  currentState:             OnboardingStage | null;
+  cancellationGraceEndsAt?: string | null;
+  graceDaysRemaining?:      number | null;
+  tasks:                    OnboardingTask[];
+}
+
 export interface Employee {
   id:                      string;
   tenantId:                string;
@@ -136,6 +180,9 @@ export interface Employee {
   joinDate?:               string | null;
   status:                  EmployeeStatus;
   isActive:                boolean;
+  isNewEmployee:           boolean;
+  onboardingState?:        OnboardingStage | null;
+  cancellationGraceEndsAt?: string | null;
   remarks?:                string | null;
   createdAt:               string;
   updatedAt:               string;

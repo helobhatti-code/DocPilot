@@ -80,6 +80,7 @@ export class EmployeesService {
     if (query.companyId)   where.companyId   = query.companyId;
     if (query.status)      where.status      = query.status;
     if (query.designation) where.designation = { contains: query.designation, mode: 'insensitive' };
+    if (query.isNewEmployee !== undefined) where.isNewEmployee = query.isNewEmployee;
     if (query.q) {
       where.OR = [
         { name:         { contains: query.q, mode: 'insensitive' } },

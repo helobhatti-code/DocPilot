@@ -55,6 +55,7 @@ export interface MockPrisma {
   companyDocument: MockModel;
   expiryNotificationLog: MockModel;
   alarmThresholdConfig: MockModel;
+  onboardingTask: MockModel;
   $transaction: jest.Mock;
   runUnscoped: jest.Mock;
   $executeRawUnsafe: jest.Mock;
@@ -93,6 +94,7 @@ export function makeMockPrisma(): MockPrisma {
     companyDocument: makeModel(),
     expiryNotificationLog: makeModel(),
     alarmThresholdConfig: makeModel(),
+    onboardingTask: makeModel(),
     /**
      * Replicate Prisma's $transaction behaviour: if called with an array, run
      * each promise to completion. If called with a callback, invoke it with

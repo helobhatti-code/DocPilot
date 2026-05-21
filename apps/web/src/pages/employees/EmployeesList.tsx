@@ -8,6 +8,7 @@ import { Pagination } from '@/components/Pagination';
 import { api } from '@/lib/api';
 import { bandStyle } from '@/lib/expiryBand';
 import type { Employee, ExpiryBand, Paginated } from '@/lib/types';
+import NewEmployeesPipeline from './NewEmployeesPipeline';
 
 // ─── Expiry cell with 30-day visa alarm label ─────────────────────────────────
 
@@ -41,11 +42,14 @@ function AttachmentLink({ url, label }: { url?: string | null; label: string }) 
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+type Tab = 'existing' | 'new';
+
 export default function EmployeesList() {
-  const nav             = useNavigate();
-  const [q, setQ]       = useState('');
-  const [page, setPage] = useState(1);
-  const pageSize        = 25;
+  const nav              = useNavigate();
+  const [tab, setTab]    = useState<Tab>('existing');
+  const [q, setQ]        = useState('');
+  const [page, setPage]  = useState(1);
+  const pageSize         = 25;
 
   const params: Record<string, unknown> = { page, pageSize };
   if (q.trim()) params.q = q.trim();
@@ -99,52 +103,61 @@ export default function EmployeesList() {
         </button>
       </div>
 
-      {/* Tab strip — "New Employees" is Coming Soon (Phase 2) */}
+      {/* Tab strip */}
       <div className="flex gap-1 border-b border-border">
-        <button className="px-4 py-2 text-sm font-medium border-b-2 border-brand-orange text-brand-orange">
-          Existing Employees
-        </button>
-        <button
-          disabled
-          className="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-text-secondary opacity-60 cursor-not-allowed flex items-center gap-1.5"
-          title="New Employees onboarding workflow — Phase 2"
-        >
-          New Employees
-          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-400/15 text-amber-400 uppercase tracking-wide">
-            Coming Soon
-          </span>
-        </button>
+        {([
+          { id: 'existing', label: 'Existing Employees' },
+          { id: 'new',      label: 'New Employees' },
+        ] as { id: Tab; label: string }[]).map(({ id, label }) => (
+          <button
+            key={id}
+            onClick={() => { setTab(id); setPage(1); setQ(''); }}
+            className={clsx(
+              'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
+              tab === id
+                ? 'border-brand-orange text-brand-orange'
+                : 'border-transparent text-text-secondary hover:text-text-primary',
+            )}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
-        <input
-          value={q}
-          onChange={(e) => { setQ(e.target.value); setPage(1); }}
-          placeholder="Search by name, designation, or Emirates ID…"
-          className="w-full pl-10 pr-3 py-2 rounded-lg bg-bg-input border border-border text-sm text-text-primary placeholder-text-secondary focus:border-brand-orange focus:outline-none transition-colors"
-        />
-      </div>
+      {/* New Employees tab — pipeline view */}
+      {tab === 'new' && <NewEmployeesPipeline />}
 
-      {/* Table */}
-      <DataTable<Employee>
-        columns={columns}
-        rows={items}
-        rowKey={(e) => e.id}
-        loading={isLoading}
-        onRowClick={(e) => nav(`/employees/${e.id}/edit`)}
-      />
+      {/* Existing Employees tab — search + table */}
+      {tab === 'existing' && (
+        <>
+          <div className="relative max-w-md">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
+            <input
+              value={q}
+              onChange={(e) => { setQ(e.target.value); setPage(1); }}
+              placeholder="Search by name, designation, or Emirates ID…"
+              className="w-full pl-10 pr-3 py-2 rounded-lg bg-bg-input border border-border text-sm text-text-primary placeholder-text-secondary focus:border-brand-orange focus:outline-none transition-colors"
+            />
+          </div>
 
-      {/* Pagination */}
-      {(data?.total ?? 0) > pageSize && (
-        <Pagination
-          page={page}
-          pageSize={pageSize}
-          total={data?.total ?? 0}
-          onPage={setPage}
-          onPageSize={() => {}}
-        />
+          <DataTable<Employee>
+            columns={columns}
+            rows={items}
+            rowKey={(e) => e.id}
+            loading={isLoading}
+            onRowClick={(e) => nav(`/employees/${e.id}/edit`)}
+          />
+
+          {(data?.total ?? 0) > pageSize && (
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              total={data?.total ?? 0}
+              onPage={setPage}
+              onPageSize={() => {}}
+            />
+          )}
+        </>
       )}
     </div>
   );

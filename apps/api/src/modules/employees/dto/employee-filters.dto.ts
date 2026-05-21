@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { EmployeeStatus } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class EmployeeFiltersDto {
   @ApiPropertyOptional({ description: 'Free-text search on employee name' })
@@ -20,6 +20,12 @@ export class EmployeeFiltersDto {
 
   @ApiPropertyOptional({ enum: ['valid', '30d', '14d', '7d', 'expired'] })
   @IsOptional() @IsString() expiryBand?: string;
+
+  @ApiPropertyOptional({ description: 'If true, return only new-employee onboarding records' })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  isNewEmployee?: boolean;
 
   @ApiPropertyOptional({ default: 1 })
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number = 1;

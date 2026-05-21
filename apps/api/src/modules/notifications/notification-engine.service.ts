@@ -31,6 +31,7 @@ const RECIPIENT_ROLES: Record<NotificationType, UserRole[]> = {
   DATA_DELETION_WARNING: [UserRole.ADMIN],
   INVITATION:           [], // direct-targeted to the invitee only
   DOCUMENT_EXPIRY_ALERT: [UserRole.ADMIN, UserRole.PM, UserRole.HR, UserRole.SECRETARY],
+  ONBOARDING_VISA_GRACE_ALARM: [UserRole.ADMIN, UserRole.PM, UserRole.HR],
 };
 
 const DEDUPE_WINDOW_MS = 24 * 60 * 60 * 1000;
