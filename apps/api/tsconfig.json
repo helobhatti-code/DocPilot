@@ -7,6 +7,7 @@
     "paths": {
       "@/*": ["src/*"]
     },
+    "declaration": false,
     "incremental": true,
     "tsBuildInfoFile": ".tsbuildinfo"
   },
