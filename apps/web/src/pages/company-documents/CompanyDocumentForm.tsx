@@ -140,6 +140,33 @@ function Field({ label, required, children }: { label: string; required?: boolea
   );
 }
 
+// ─── Company dropdown ─────────────────────────────────────────────────────────
+
+function CompanySelect({
+  register,
+  disabled,
+}: {
+  register: ReturnType<typeof useForm<FormValues>>['register'];
+  disabled?: boolean;
+}) {
+  const { data } = useQuery({
+    queryKey: ['companies-all'],
+    queryFn: async () => (await api.get('/companies?pageSize=200')).data as { items: { id: string; name: string; code: string }[] },
+  });
+  return (
+    <select
+      {...register('companyId', { required: true })}
+      disabled={disabled}
+      className={clsx(inputCls, disabled && 'opacity-60 cursor-not-allowed')}
+    >
+      <option value="">Select company…</option>
+      {data?.items.map((c) => (
+        <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
+      ))}
+    </select>
+  );
+}
+
 // ─── Dynamic metadata section ─────────────────────────────────────────────────
 
 function MetadataFields({ docType, register, control }: {
@@ -402,8 +429,8 @@ export default function CompanyDocumentForm() {
         <div className="bg-bg-card border border-border rounded-xl p-5 space-y-4">
           <h2 className="font-semibold text-sm">Document Details</h2>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Company ID" required>
-              <input {...register('companyId')} className={inputCls} />
+            <Field label="Company" required>
+              <CompanySelect register={register} disabled={isEdit} />
             </Field>
             <Field label="Document Name" required>
               <input {...register('docName')} className={inputCls} />

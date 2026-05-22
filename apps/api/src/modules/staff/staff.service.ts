@@ -10,6 +10,11 @@ import { computeExpiryBand, worstBand, type ExpiryBand } from '@/common/utils/ex
 import { uploadAttachment, type AttachmentFile } from '@/common/utils/attachment-upload';
 import { CreateStaffDto, ListStaffQueryDto, UpdateStaffDto } from './dto/staff.dto';
 
+function toDateTime(date: string | undefined): string | undefined {
+  if (!date) return undefined;
+  return date.includes('T') ? date : `${date}T00:00:00.000Z`;
+}
+
 function daysUntil(date: Date | null | undefined): number | null {
   if (!date) return null;
   const today = new Date();
@@ -68,7 +73,14 @@ export class StaffService {
   create(actor: AuthUser, dto: CreateStaffDto) {
     // Explicitly pass tenantId — Prisma $use middleware loses AsyncLocalStorage context
     return this.prisma.staff.create({
-      data: { tenantId: actor.tenantId, ...dto } as Prisma.StaffUncheckedCreateInput,
+      data: {
+        tenantId: actor.tenantId,
+        ...dto,
+        emiratesIdExpiryDate: toDateTime(dto.emiratesIdExpiryDate),
+        visaExpiryDate:       toDateTime(dto.visaExpiryDate),
+        laborCardExpiryDate:  toDateTime(dto.laborCardExpiryDate),
+        passportExpiryDate:   toDateTime(dto.passportExpiryDate),
+      } as Prisma.StaffUncheckedCreateInput,
     });
   }
 
@@ -135,6 +147,10 @@ export class StaffService {
         where: { id },
         data: {
           ...dto,
+          emiratesIdExpiryDate: toDateTime(dto.emiratesIdExpiryDate),
+          visaExpiryDate:       toDateTime(dto.visaExpiryDate),
+          laborCardExpiryDate:  toDateTime(dto.laborCardExpiryDate),
+          passportExpiryDate:   toDateTime(dto.passportExpiryDate),
           lastWorkingDay: newLwd ?? undefined,
           isActive: triggersOffboarding ? false : dto.isActive,
         },
