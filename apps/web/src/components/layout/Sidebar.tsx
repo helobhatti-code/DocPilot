@@ -57,6 +57,7 @@ const MAIN_AFTER_PASSES: Item[] = [
   { to: '/notifications',      label: 'Notifications',   icon: Bell,        iconColor: 'text-amber-400',  iconBg: 'bg-amber-400/15'  },
   { to: '/vehicles',           label: 'Vehicles',        icon: Car,         iconColor: 'text-cyan-500',   iconBg: 'bg-cyan-500/15'   },
   { to: '/machinery',          label: 'Heavy Machinery', icon: Construction, iconColor: 'text-yellow-500', iconBg: 'bg-yellow-500/15' },
+  { to: '/companies',           label: 'Companies',       icon: Building2,   iconColor: 'text-teal-400',   iconBg: 'bg-teal-400/15'   },
   { to: '/company-documents',  label: 'Company Docs',    icon: FolderOpen,  iconColor: 'text-teal-300',   iconBg: 'bg-teal-300/15'   },
 ];
 

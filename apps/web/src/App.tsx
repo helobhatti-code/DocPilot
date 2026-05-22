@@ -35,6 +35,7 @@ const MachineryList       = lazy(() => import('@/pages/machinery/MachineryList')
 const MachineryForm       = lazy(() => import('@/pages/machinery/MachineryForm'));
 const EmployeesList       = lazy(() => import('@/pages/employees/EmployeesList'));
 const EmployeeForm        = lazy(() => import('@/pages/employees/EmployeeForm'));
+const CompaniesList        = lazy(() => import('@/pages/companies/CompaniesList'));
 const CompanyDocumentsList = lazy(() => import('@/pages/company-documents/index'));
 const CompanyDocumentForm  = lazy(() => import('@/pages/company-documents/CompanyDocumentForm'));
 const AlarmThresholds      = lazy(() => import('@/pages/system/AlarmThresholds'));
@@ -87,6 +88,8 @@ export default function App() {
           <Route path="/employees"          element={<EmployeesList />} />
           <Route path="/employees/new"      element={<EmployeeForm />} />
           <Route path="/employees/:id/edit" element={<EmployeeForm />} />
+
+          <Route path="/companies"                      element={<CompaniesList />} />
 
           <Route path="/company-documents"              element={<CompanyDocumentsList />} />
           <Route path="/company-documents/new"          element={<CompanyDocumentForm />} />
