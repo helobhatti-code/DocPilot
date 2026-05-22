@@ -295,6 +295,7 @@ export default function CompanyDocumentForm() {
   const isEdit = !!id;
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   const { data: existing } = useQuery({
     queryKey: ['company-document', id],
@@ -365,9 +366,24 @@ export default function CompanyDocumentForm() {
       if (isEdit) return api.patch(`/company-documents/${id}`, payload);
       return api.post('/company-documents', payload);
     },
-    onSuccess: () => {
+    onSuccess: async (res) => {
       qc.invalidateQueries({ queryKey: ['company-documents'] });
       if (id) qc.invalidateQueries({ queryKey: ['company-document', id] });
+
+      // If a file was staged during create, upload it now using the new doc id
+      if (!isEdit && pendingFile) {
+        const newId = (res as { data: { id: string } }).data.id;
+        try {
+          const fd = new FormData();
+          fd.append('file', pendingFile);
+          await api.post(`/company-documents/${newId}/attachment`, fd, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+        } catch {
+          toast.error('Document created but attachment upload failed');
+        }
+      }
+
       toast.success(isEdit ? 'Document updated' : 'Document created');
       nav('/company-documents');
     },
@@ -379,7 +395,14 @@ export default function CompanyDocumentForm() {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !id) return;
+    if (!file) return;
+
+    if (!isEdit) {
+      // In create mode: stage the file, upload after doc is saved
+      setPendingFile(file);
+      return;
+    }
+
     setUploading(true);
     try {
       const fd = new FormData();
@@ -462,31 +485,33 @@ export default function CompanyDocumentForm() {
           </Field>
         </div>
 
-        {/* Attachment upload (edit mode only) */}
-        {isEdit && (
-          <div className="bg-bg-card border border-border rounded-xl p-5 space-y-3">
-            <h2 className="font-semibold text-sm">Attachment</h2>
-            {existing?.attachmentId && (
-              <a
-                href={existing.attachmentId}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-accent-blue hover:underline block"
-              >
-                View current attachment →
-              </a>
-            )}
-            <input ref={fileRef} type="file" accept=".jpg,.jpeg,.pdf" className="hidden" onChange={handleFileUpload} />
-            <button
-              type="button"
-              disabled={uploading}
-              onClick={() => fileRef.current?.click()}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm text-text-secondary hover:text-text-primary hover:border-brand-orange transition-colors disabled:opacity-50"
+        {/* Attachment upload */}
+        <div className="bg-bg-card border border-border rounded-xl p-5 space-y-3">
+          <h2 className="font-semibold text-sm">Attachment</h2>
+          {existing?.attachmentId && (
+            <a
+              href={existing.attachmentId}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-accent-blue hover:underline block"
             >
-              {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-              {uploading ? 'Uploading…' : 'Upload Attachment (JPEG/PDF, max 2MB)'}
-            </button>
-          </div>
+              View current attachment →
+            </a>
+          )}
+          {pendingFile && (
+            <p className="text-xs text-emerald-400">Selected: {pendingFile.name}</p>
+          )}
+          <input ref={fileRef} type="file" accept=".jpg,.jpeg,.pdf" className="hidden" onChange={handleFileUpload} />
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => fileRef.current?.click()}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm text-text-secondary hover:text-text-primary hover:border-brand-orange transition-colors disabled:opacity-50"
+          >
+            {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+            {uploading ? 'Uploading…' : pendingFile ? 'Change file' : 'Upload Attachment (JPEG/PDF, max 2MB)'}
+          </button>
+        </div>
         )}
 
         {/* Actions */}
