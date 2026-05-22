@@ -58,7 +58,7 @@ export class CompaniesService {
     });
     if (existing) throw new ConflictException(`Company code "${dto.code}" already exists in this tenant`);
 
-    return this.prisma.company.create({
+    const company = await this.prisma.company.create({
       data: {
         tenantId: actor.tenantId,
         name: dto.name,
@@ -70,6 +70,16 @@ export class CompaniesService {
         logoUrl: dto.logoUrl,
       } as Prisma.CompanyUncheckedCreateInput,
     });
+
+    // Grant creator explicit access so they can see the company even if
+    // canAccessAllCompanies is false on their account.
+    if (!actor.canAccessAllCompanies) {
+      await this.prisma.userCompanyAccess.create({
+        data: { userId: actor.id, companyId: company.id, accessLevel: 'ADMIN' },
+      });
+    }
+
+    return company;
   }
 
   async findOne(id: string) {
