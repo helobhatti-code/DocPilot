@@ -865,8 +865,8 @@ export class ReportsService {
 
     const rows = employees
       .map((e) => {
-        const visaDays             = this.daysBetween(today, e.visaExpiryDate);
-        const visaExpiryBand       = bandFromDays(visaDays);
+        const visaDays             = e.visaExpiryDate ? this.daysBetween(today, e.visaExpiryDate) : null;
+        const visaExpiryBand       = visaDays !== null ? bandFromDays(visaDays) : null;
         const emiratesIdBand       = e.emiratesIdExpiryDate ? bandFromDays(this.daysBetween(today, e.emiratesIdExpiryDate)) : null;
         const laborCardBand        = e.laborCardExpiryDate  ? bandFromDays(this.daysBetween(today, e.laborCardExpiryDate))  : null;
         const passportBand         = e.passportExpiryDate   ? bandFromDays(this.daysBetween(today, e.passportExpiryDate))   : null;
@@ -885,7 +885,7 @@ export class ReportsService {
           companyName:          e.company?.name ?? '',
         };
       })
-      .filter((r) => !f.band || f.band.split(',').map((b) => b.trim()).includes(r.visaExpiryBand));
+      .filter((r) => !f.band || (r.visaExpiryBand !== null && f.band.split(',').map((b) => b.trim()).includes(r.visaExpiryBand)));
 
     return {
       type: 'employees-visa-status',

@@ -38,7 +38,7 @@ export default function EmployeeForm() {
       reset({
         name:                 existing.name,
         designation:          existing.designation,
-        emiratesIdNo:         existing.emiratesIdNo,
+        emiratesIdNo:         existing.emiratesIdNo ?? '',
         emiratesIdExpiryDate: existing.emiratesIdExpiryDate?.slice(0, 10) ?? '',
         visaNo:               existing.visaNo ?? '',
         visaExpiryDate:       existing.visaExpiryDate?.slice(0, 10) ?? '',

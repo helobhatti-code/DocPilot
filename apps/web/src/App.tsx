@@ -35,6 +35,7 @@ const MachineryList       = lazy(() => import('@/pages/machinery/MachineryList')
 const MachineryForm       = lazy(() => import('@/pages/machinery/MachineryForm'));
 const EmployeesList       = lazy(() => import('@/pages/employees/EmployeesList'));
 const EmployeeForm        = lazy(() => import('@/pages/employees/EmployeeForm'));
+const NewHireForm         = lazy(() => import('@/pages/employees/NewHireForm'));
 const CompaniesList        = lazy(() => import('@/pages/companies/CompaniesList'));
 const CompanyDocumentsList = lazy(() => import('@/pages/company-documents/index'));
 const CompanyDocumentForm  = lazy(() => import('@/pages/company-documents/CompanyDocumentForm'));
@@ -85,9 +86,10 @@ export default function App() {
               The People page (/staff) is the directory of all personnel; the
               onboarding workflow continues to live under /employees because
               it tracks per-stage tasks and grace periods. */}
-          <Route path="/employees"          element={<EmployeesList />} />
-          <Route path="/employees/new"      element={<EmployeeForm />} />
-          <Route path="/employees/:id/edit" element={<EmployeeForm />} />
+          <Route path="/employees"           element={<EmployeesList />} />
+          <Route path="/employees/new"       element={<EmployeeForm />} />
+          <Route path="/employees/new-hire"  element={<NewHireForm />} />
+          <Route path="/employees/:id/edit"  element={<EmployeeForm />} />
 
           <Route path="/companies"                      element={<CompaniesList />} />
 

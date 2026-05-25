@@ -202,6 +202,16 @@ export default function NewEmployeesPipeline() {
 
   return (
     <div className="space-y-5">
+      {/* Add new hire */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => nav('/employees/new-hire')}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-orange hover:bg-brand-orange-dark text-white text-sm font-semibold transition-colors"
+        >
+          <UserPlus size={15} /> Add New Hire
+        </button>
+      </div>
+
       {/* Summary cards */}
       <div className="grid grid-cols-4 gap-3">
         {[
@@ -260,7 +270,7 @@ export default function NewEmployeesPipeline() {
                 <tr>
                   <td colSpan={5} className="px-4 py-12 text-center text-sm text-text-secondary">
                     <UserPlus size={32} className="mx-auto mb-2 opacity-30" />
-                    No new employees yet. Mark an employee as &quot;New Employee&quot; to start onboarding.
+                    No new employees yet. Click <span className="font-semibold text-brand-orange">Add New Hire</span> to start onboarding someone.
                   </td>
                 </tr>
               )}

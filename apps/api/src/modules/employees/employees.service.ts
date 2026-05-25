@@ -16,7 +16,7 @@ import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { EmployeeFiltersDto } from './dto/employee-filters.dto';
 
 export type EmployeeWithBands = Employee & {
-  visaExpiryBand:         ExpiryBand;
+  visaExpiryBand:         ExpiryBand | null;
   emiratesIdExpiryBand:   ExpiryBand | null;
   laborCardExpiryBand:    ExpiryBand | null;
   passportExpiryBand:     ExpiryBand | null;
@@ -49,7 +49,7 @@ export class EmployeesService {
   ) {}
 
   private addBands(e: Employee, today = new Date()): EmployeeWithBands {
-    const visaExpiryBand       = computeExpiryBand(e.visaExpiryDate, today)!;
+    const visaExpiryBand       = computeExpiryBand(e.visaExpiryDate, today);
     const emiratesIdExpiryBand = computeExpiryBand(e.emiratesIdExpiryDate, today);
     const laborCardExpiryBand  = computeExpiryBand(e.laborCardExpiryDate, today);
     const passportExpiryBand   = computeExpiryBand(e.passportExpiryDate, today);
@@ -120,11 +120,12 @@ export class EmployeesService {
         tenantId:               actor.tenantId,
         name:                   dto.name,
         designation:            dto.designation,
-        emiratesIdNo:           dto.emiratesIdNo,
+        nationality:            dto.nationality            ?? null,
+        emiratesIdNo:           dto.emiratesIdNo           ?? null,
         emiratesIdExpiryDate:   dto.emiratesIdExpiryDate   ? new Date(dto.emiratesIdExpiryDate)   : null,
         emiratesIdAttachmentId: dto.emiratesIdAttachmentId ?? null,
         visaNo:                 dto.visaNo                 ?? null,
-        visaExpiryDate:         new Date(dto.visaExpiryDate),
+        visaExpiryDate:         dto.visaExpiryDate         ? new Date(dto.visaExpiryDate)         : null,
         visaAttachmentId:       dto.visaAttachmentId       ?? null,
         laborCardNo:            dto.laborCardNo            ?? null,
         laborCardExpiryDate:    dto.laborCardExpiryDate    ? new Date(dto.laborCardExpiryDate)     : null,
@@ -137,6 +138,8 @@ export class EmployeesService {
         joinDate:               dto.joinDate               ? new Date(dto.joinDate)                : null,
         status:                 dto.status                 ?? EmployeeStatus.ACTIVE,
         remarks:                dto.remarks                ?? null,
+        isNewEmployee:          dto.isNewEmployee          ?? false,
+        onboardingState:        dto.onboardingState        ?? null,
         createdBy:              actor.id,
       } as Prisma.EmployeeUncheckedCreateInput,
     });

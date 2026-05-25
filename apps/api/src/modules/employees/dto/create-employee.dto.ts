@@ -11,16 +11,24 @@ import {
 export class CreateEmployeeDto {
   @ApiProperty() @IsString() name!: string;
   @ApiProperty() @IsString() designation!: string;
-  @ApiProperty() @IsString() emiratesIdNo!: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() nationality?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() emiratesIdNo?: string;
   @ApiPropertyOptional() @IsOptional() @IsDateString() emiratesIdExpiryDate?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() emiratesIdAttachmentId?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() visaNo?: string;
 
-  @ApiProperty({ description: 'YYYY-MM-DD — mandatory; alarm fires at 30 days' })
-  @IsDateString()
-  visaExpiryDate!: string;
+  @ApiPropertyOptional({ description: 'YYYY-MM-DD — optional for new hires before residence visa is issued' })
+  @IsOptional() @IsDateString()
+  visaExpiryDate?: string;
 
   @ApiPropertyOptional() @IsOptional() @IsString() visaAttachmentId?: string;
+
+  // New-hire onboarding fields
+  @ApiPropertyOptional({ description: 'Mark this employee as a new hire entering the onboarding pipeline' })
+  @IsOptional() isNewEmployee?: boolean;
+
+  @ApiPropertyOptional({ description: 'Initial onboarding stage (e.g. VISIT_VISA_PENDING)' })
+  @IsOptional() @IsString() onboardingState?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() laborCardNo?: string;
   @ApiPropertyOptional() @IsOptional() @IsDateString() laborCardExpiryDate?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() laborCardAttachmentId?: string;

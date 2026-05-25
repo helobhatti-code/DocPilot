@@ -184,11 +184,12 @@ export interface Employee {
   companyId:               string;
   name:                    string;
   designation:             string;
-  emiratesIdNo:            string;
+  nationality?:            string | null;
+  emiratesIdNo?:           string | null;
   emiratesIdExpiryDate?:   string | null;
   emiratesIdAttachmentId?: string | null;
   visaNo?:                 string | null;
-  visaExpiryDate:          string;
+  visaExpiryDate?:         string | null;
   visaAttachmentId?:       string | null;
   laborCardNo?:            string | null;
   laborCardExpiryDate?:    string | null;
@@ -208,7 +209,7 @@ export interface Employee {
   createdAt:               string;
   updatedAt:               string;
   // computed bands
-  visaExpiryBand:          ExpiryBand;
+  visaExpiryBand:          ExpiryBand | null;
   emiratesIdExpiryBand:    ExpiryBand | null;
   laborCardExpiryBand:     ExpiryBand | null;
   passportExpiryBand:      ExpiryBand | null;

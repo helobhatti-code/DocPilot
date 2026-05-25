@@ -592,11 +592,12 @@ model Employee {
   companyId                String         @map("company_id")
   name                     String
   designation              String
-  emiratesIdNo             String         @map("emirates_id_no")
+  nationality              String?
+  emiratesIdNo             String?        @map("emirates_id_no")
   emiratesIdExpiryDate     DateTime?      @map("emirates_id_expiry_date") @db.Date
   emiratesIdAttachmentId   String?        @map("emirates_id_attachment_id")
   visaNo                   String?        @map("visa_no")
-  visaExpiryDate           DateTime       @map("visa_expiry_date") @db.Date
+  visaExpiryDate           DateTime?      @map("visa_expiry_date") @db.Date
   visaAttachmentId         String?        @map("visa_attachment_id")
   laborCardNo              String?        @map("labor_card_no")
   laborCardExpiryDate      DateTime?      @map("labor_card_expiry_date") @db.Date
