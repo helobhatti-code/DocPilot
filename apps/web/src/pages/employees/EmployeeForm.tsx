@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '@/lib/api';
 import type { Employee } from '@/lib/types';
+import { OnboardingPanel } from './OnboardingPanel';
 
 type FormValues = {
   name: string; designation: string;
@@ -91,6 +92,9 @@ export default function EmployeeForm() {
         <p className="text-sm text-text-secondary mt-0.5">Fill in employee details and compliance document expiry dates.</p>
       </div>
 
+      {/* Onboarding panel (only shown when employee is a new hire) */}
+      {isEdit && id && <OnboardingPanel employeeId={id} />}
+
       <form onSubmit={handleSubmit((v) => save.mutate(v))} className="space-y-5">
         {/* Personal info */}
         <div className="bg-bg-card border border-border rounded-xl p-5 space-y-4">
@@ -115,7 +119,7 @@ export default function EmployeeForm() {
         <div className="bg-bg-card border border-border rounded-xl p-5 space-y-4">
           <h2 className="font-semibold text-sm">Emirates ID</h2>
           <div className="grid grid-cols-2 gap-4">
-            <F label="Emirates ID No." required><Input name="emiratesIdNo" /></F>
+            <F label="Emirates ID No."><Input name="emiratesIdNo" /></F>
             <F label="Expiry Date"><Input name="emiratesIdExpiryDate" type="date" /></F>
           </div>
         </div>
@@ -130,7 +134,7 @@ export default function EmployeeForm() {
           </h2>
           <div className="grid grid-cols-2 gap-4">
             <F label="Visa No."><Input name="visaNo" /></F>
-            <F label="Visa Expiry Date" required><Input name="visaExpiryDate" type="date" /></F>
+            <F label="Visa Expiry Date"><Input name="visaExpiryDate" type="date" /></F>
           </div>
         </div>
 

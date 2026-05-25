@@ -89,7 +89,6 @@ export class OnboardingService {
   async advance(actor: AuthUser, employeeId: string, dto: AdvanceOnboardingDto) {
     const employee = await this.prisma.employee.findUnique({
       where: { id: employeeId },
-      select: { id: true, tenantId: true, companyId: true, name: true, onboardingState: true, isActive: true },
     });
     if (!employee) throw new NotFoundException('Employee not found');
     if (!employee.isActive) throw new BadRequestException('Cannot advance onboarding for an inactive employee');
@@ -99,6 +98,17 @@ export class OnboardingService {
     }
 
     await this.assertGatePassed(employeeId, dto.stage);
+
+    const promotingToStaff = dto.stage === 'EID_DELIVERED' && dto.status === 'COMPLETED';
+
+    // Guard: EID_DELIVERED requires an EID number on the employee, since it triggers
+    // creation of the active Staff record. Without it the staff row would be unusable.
+    if (promotingToStaff && !employee.emiratesIdNo) {
+      throw new BadRequestException(
+        'Cannot mark EID as delivered: the employee record has no Emirates ID number. ' +
+        'Open the employee detail page and enter the EID number first.',
+      );
+    }
 
     const now = new Date();
 
@@ -146,6 +156,43 @@ export class OnboardingService {
         updateData.onboardingState = 'ONBOARDED';
       }
 
+      // ── EID_DELIVERED → promote to active Staff and remove from new-hire pipeline
+      let promotedStaffId: string | null = employee.promotedStaffId ?? null;
+      if (promotingToStaff) {
+        const staffData = {
+          tenantId:               employee.tenantId,
+          companyId:              employee.companyId,
+          name:                   employee.name,
+          nationality:            employee.nationality,
+          designation:            employee.designation,
+          personType:             'DIRECT_EMPLOYEE' as const,
+          isActive:               true,
+          emiratesIdNo:           employee.emiratesIdNo,
+          emiratesIdExpiryDate:   employee.emiratesIdExpiryDate,
+          emiratesIdAttachmentId: employee.emiratesIdAttachmentId,
+          visaNo:                 employee.visaNo,
+          visaExpiryDate:         employee.visaExpiryDate,
+          visaAttachmentId:       employee.visaAttachmentId,
+          laborCardNo:            employee.laborCardNo,
+          laborCardExpiryDate:    employee.laborCardExpiryDate,
+          laborCardAttachmentId:  employee.laborCardAttachmentId,
+          passportNo:             employee.passportNo,
+          passportExpiryDate:     employee.passportExpiryDate,
+          passportAttachmentId:   employee.passportAttachmentId,
+        };
+
+        if (promotedStaffId) {
+          // Idempotent: re-running on a later stage just refreshes the Staff record.
+          await tx.staff.update({ where: { id: promotedStaffId }, data: staffData });
+        } else {
+          const staff = await tx.staff.create({ data: staffData });
+          promotedStaffId = staff.id;
+        }
+
+        updateData.isNewEmployee = false;
+        updateData.promotedStaffId = promotedStaffId;
+      }
+
       await tx.employee.update({
         where: { id: employeeId },
         data: updateData,
@@ -155,18 +202,24 @@ export class OnboardingService {
         data: {
           tenantId: employee.tenantId,
           userId: actor.id,
-          action: 'ONBOARDING_ADVANCED',
+          action: promotingToStaff ? 'EMPLOYEE_PROMOTED_TO_STAFF' : 'ONBOARDING_ADVANCED',
           entityType: 'Employee',
           entityId: employeeId,
           details: {
             stage: dto.stage,
             status: dto.status,
             employeeName: employee.name,
+            promotedStaffId: promotingToStaff ? promotedStaffId : undefined,
           } as Prisma.InputJsonValue,
         } as unknown as Prisma.AuditLogUncheckedCreateInput,
       });
 
-      return { employee: { id: employeeId, onboardingState: dto.stage }, task };
+      return {
+        employee: { id: employeeId, onboardingState: dto.stage },
+        task,
+        promotedToStaff: promotingToStaff,
+        promotedStaffId,
+      };
     });
   }
 

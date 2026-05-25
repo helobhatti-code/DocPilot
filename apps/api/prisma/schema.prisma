@@ -615,6 +615,8 @@ model Employee {
   isNewEmployee            Boolean        @default(false) @map("is_new_employee")
   onboardingState          String?        @map("onboarding_state")
   cancellationGraceEndsAt  DateTime?      @map("cancellation_grace_ends_at")
+  // Set when a new hire is promoted to an active Staff record on EID_DELIVERED.
+  promotedStaffId          String?        @map("promoted_staff_id") @db.Char(36)
   createdAt                DateTime       @default(now()) @map("created_at")
   updatedAt                DateTime       @updatedAt @map("updated_at")
   createdBy                String?        @map("created_by")
