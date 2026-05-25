@@ -33,9 +33,14 @@ export class GatePassesService {
 
     const staff = await this.prisma.staff.findUnique({
       where: { id: dto.staffId },
-      select: { id: true },
+      select: { id: true, isActive: true, name: true },
     });
     if (!staff) throw new NotFoundException('Staff not found');
+    if (!staff.isActive) {
+      throw new BadRequestException(
+        `Cannot issue a gate pass to ${staff.name} — staff member is inactive. Reactivate them first.`,
+      );
+    }
 
     return this.prisma.gatePass.create({
       data: {

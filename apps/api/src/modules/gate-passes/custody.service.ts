@@ -56,6 +56,12 @@ export class CustodyService {
     this.assertOwnsPassIfSubcontractor(actor, pass);
     this.assertTransitionAllowed(pass.custodyStatus, CustodyStatus.WITH_PERSON);
 
+    if (!pass.staff.isActive) {
+      throw new BadRequestException(
+        `Cannot hand over pass to ${pass.staff.name} — staff member is inactive. Reactivate them first.`,
+      );
+    }
+
     // Generate the unsigned handover document BEFORE we flip custody so a PDF
     // failure doesn't leave the system in an inconsistent state.
     const generated = await this.handoverPdf.generate(actor, pass);
