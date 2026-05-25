@@ -82,9 +82,10 @@ export function OnboardingPanel({ employeeId }: { employeeId: string }) {
   const [advancing, setAdvancing] = useState<OnboardingStage | null>(null);
   const [notes, setNotes] = useState('');
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['employee-onboarding', employeeId],
     queryFn: async () => (await api.get(`/employees/${employeeId}/onboarding`)).data as OnboardingState,
+    retry: 1,
   });
 
   const advance = useMutation({
@@ -114,7 +115,7 @@ export function OnboardingPanel({ employeeId }: { employeeId: string }) {
     },
   });
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return (
       <div className="bg-bg-card border border-border rounded-xl p-5 text-sm text-text-secondary">
         Loading onboarding state…
@@ -122,8 +123,21 @@ export function OnboardingPanel({ employeeId }: { employeeId: string }) {
     );
   }
 
-  // Only show panel when this is actually a new hire (or has onboarding state)
-  if (!data.isNewEmployee && !data.currentState) return null;
+  if (error || !data) {
+    const msg = (error as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message
+      ?? (error as { message?: string })?.message
+      ?? 'Unknown error';
+    return (
+      <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-5 text-sm text-rose-300">
+        <div className="font-semibold mb-1">Could not load onboarding state</div>
+        <div className="text-xs">{msg}</div>
+      </div>
+    );
+  }
+
+  // Show panel for any employee that's in the onboarding pipeline OR was once.
+  // We keep showing it after promotion so the audit trail is still visible.
+  if (!data.isNewEmployee && !data.currentState && data.tasks.length === 0) return null;
 
   const currentKey = data.currentState ?? '__none__';
   const nextOptions = NEXT_STAGES[currentKey] ?? [];
