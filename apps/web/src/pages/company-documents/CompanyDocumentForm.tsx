@@ -512,7 +512,6 @@ export default function CompanyDocumentForm() {
             {uploading ? 'Uploading…' : pendingFile ? 'Change file' : 'Upload Attachment (JPEG/PDF, max 2MB)'}
           </button>
         </div>
-        )}
 
         {/* Actions */}
         <div className="flex items-center justify-end gap-3">
